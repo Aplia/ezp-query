@@ -1,4 +1,9 @@
 {
     "name": "aplia/contentquery",
-    "version": "0.1.0"
+    "version": "0.1.0",
+    "autoload": {
+        "psr-4": {
+            "ApliaContentQuery\\": "classes/ApliaContentQuery"
+        }
+    }
 }
