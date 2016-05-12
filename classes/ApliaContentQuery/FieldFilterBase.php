@@ -61,7 +61,7 @@ abstract class FieldFilterBase
                 $v = array( $v );
             }
             if (isset($filters[$k])) {
-                $filters[$k]->selected = $v;
+                $filters[$k]->setSelected($v);
             }
         }
     }
@@ -78,6 +78,11 @@ abstract class FieldFilterBase
     protected abstract function buildFilter();
 
     public abstract function resolveQuery($queryParams);
+
+    public function setSelected($values)
+    {
+        $this->selected = $values;
+    }
 
     public function getContentFilter()
     {
