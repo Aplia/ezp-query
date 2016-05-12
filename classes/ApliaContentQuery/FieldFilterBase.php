@@ -57,7 +57,7 @@ abstract class FieldFilterBase
             if ($v === null) {
                 continue;
             }
-            if (!($v instanceof FilterValues) && !is_array($v) ) {
+            if (is_numeric($v) && !is_array($v) ) {
                 $v = array( $v );
             }
             if (isset($filters[$k])) {
