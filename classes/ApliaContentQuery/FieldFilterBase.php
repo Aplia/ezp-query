@@ -54,7 +54,7 @@ abstract class FieldFilterBase
     public static function setFilterValues($filters, $values)
     {
         foreach ( $values as $k => $v) {
-            if ($v === null) {
+            if ($v === null || (is_array($v) && empty($v))) {
                 continue;
             }
             if (is_numeric($v) && !is_array($v) ) {
