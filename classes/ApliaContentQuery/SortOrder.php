@@ -41,14 +41,14 @@ class SortOrder
             if ( isset( $this->sortMap[$sortText] ) ) {
                 $sortEntry = $this->sortMap[$sortText];
                 if (is_object($sortEntry) && $sortEntry instanceof \Closure) {
-                    $sortArray = call_user_func_array($this->sortMap[$sortText], [$sortText, $order]);
+                    $sortArray = call_user_func_array($this->sortMap[$sortText], array($sortText, $order));
                 } else if (is_string($sortEntry)) {
-                    $sortArray = [[$sortEntry, $order]];
+                    $sortArray = array(array($sortEntry, $order));
                 } else {
                     $sortArray = $sortEntry;
                 }
                 $identifier = ($order ? '' : '-') . $sortText;
-                return ['order' => $order, 'identifier' => $identifier, 'array' => $sortArray];
+                return array('order' => $order, 'identifier' => $identifier, 'array' => $sortArray);
             }
         }
         return null;
