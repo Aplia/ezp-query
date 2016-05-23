@@ -26,28 +26,6 @@ class PageNumPagination implements \ArrayAccess, BasePagination
         return $paginator[$paginator->getQueryPage($query)];
     }
 
-    // eZ template access
-    public function hasAttribute($key)
-    {
-        if (is_numeric($key)) {
-            return isset($this[$key]);
-        }
-        return isset($this->$key);
-    }
-
-    public function attribute($key)
-    {
-        if (is_numeric($key)) {
-            return $this[$key];
-        }
-        return $this->$key;
-    }
-
-    public function attributes($key)
-    {
-        return array_merge(array_keys(get_object_vars($this), $this->__slots()));
-    }
-
     public function getQueryPage($queryParams)
     {
         if ( isset( $queryParams['page'] ) ) {
@@ -195,5 +173,27 @@ class PageNumPagination implements \ArrayAccess, BasePagination
     public function offsetUnset($num)
     {
         throw new \Exception("Cannot unset page entries on class '" . get_class($this) . "'");
+    }
+
+    // eZ template access
+    public function hasAttribute($key)
+    {
+        if (is_numeric($key)) {
+            return isset($this[$key]);
+        }
+        return isset($this->$key);
+    }
+
+    public function attribute($key)
+    {
+        if (is_numeric($key)) {
+            return $this[$key];
+        }
+        return $this->$key;
+    }
+
+    public function attributes($key)
+    {
+        return array_merge(array_keys(get_object_vars($this), $this->__slots()));
     }
 }
