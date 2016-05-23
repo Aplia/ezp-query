@@ -7,13 +7,17 @@ class PageNumPagination implements \ArrayAccess, BasePagination
     public $count = null;
     public $pageVariable = null;
     public $namedSizes = null;
+    public $pageClass = '\\ApliaContentQuery\\PaginationPage';
 
-    public function __construct($pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null)
+    public function __construct($pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null, array $params = null)
     {
         $this->pageSize = $pageSize;
         $this->count = $count;
         $this->pageVariable = $pageVariable;
         $this->namedSizes = $namedSizes;
+        if (isset($params['pageClass'])) {
+            $this->pageClass = $params['pageClass'];
+        }
     }
 
     public static function resolvePage($query, $pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null)
@@ -75,7 +79,8 @@ class PageNumPagination implements \ArrayAccess, BasePagination
             return null;
         }
         $offset = $this->calcOffsetFromPage($num);
-        return new PaginationPage($offset, min(($this->count - $offset), $this->pageSize), $num, $this);
+        $pageSize = $this->calcPageSize($num);
+        return new $this->pageClass($offset, min(($this->count - $offset), $pageSize), $num, $this);
     }
 
     public function pageExists($num)
@@ -137,6 +142,11 @@ class PageNumPagination implements \ArrayAccess, BasePagination
     public function calcPageCount()
     {
         return max(1, (int)ceil($this->count/$this->pageSize));
+    }
+
+    public function calcPageSize($num)
+    {
+        return $this->pageSize;
     }
 
     // property access
