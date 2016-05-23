@@ -4,37 +4,44 @@ namespace ApliaContentQuery;
 class PageNumPagination implements \ArrayAccess, BasePagination
 {
     public $pageSize = 10;
-    public $total = null;
+    public $count = null;
     public $pageVariable = null;
     public $namedSizes = null;
 
-    public function __construct($pageSize = 10, $pageVariable = null, $namedSizes = null, $total = null)
+    public function __construct($pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null)
     {
         $this->pageSize = $pageSize;
-        $this->total = $total;
+        $this->count = $count;
         $this->pageVariable = $pageVariable;
         $this->namedSizes = $namedSizes;
     }
 
-    public static function resolvePage($query, $pageSize = 10, $pageVariable = null, $namedSizes = null, $total = null)
+    public static function resolvePage($query, $pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null)
     {
-        $paginator = new PageNumPagination($pageSize, $pageVariable, $namedSizes, $total);
+        $paginator = new self($pageSize, $pageVariable, $namedSizes, $count);
         return $paginator[$paginator->getQueryPage($query)];
     }
 
+    // eZ template access
     public function hasAttribute($key)
     {
+        if (is_numeric($key)) {
+            return isset($this[$key]);
+        }
         return isset($this->$key);
     }
 
     public function attribute($key)
     {
+        if (is_numeric($key)) {
+            return $this[$key];
+        }
         return $this->$key;
     }
 
     public function attributes($key)
     {
-        return array_keys( get_object_vars($this) );
+        return array_merge(array_keys(get_object_vars($this), $this->__slots()));
     }
 
     public function getQueryPage($queryParams)
@@ -43,7 +50,7 @@ class PageNumPagination implements \ArrayAccess, BasePagination
             return (int)$queryParams['page'];
         } else if ( isset( $queryParams['offset'] ) ) {
             $offset = (int)$queryParams['offset'];
-            return floor($offset / $this->pageSize) + 1;
+            return $this->calcPageFromOffset($offset);
         }
         return 1;
     }
@@ -67,36 +74,116 @@ class PageNumPagination implements \ArrayAccess, BasePagination
         if (!isset($this[$num])) {
             return null;
         }
-        $idx = $num - 1;
+        $offset = $this->calcOffsetFromPage($num);
+        return new PaginationPage($offset, min(($this->count - $offset), $this->pageSize), $num, $this);
+    }
+
+    public function pageExists($num)
+    {
+        if ($num < 1 || ($this->count !== null ? $num > $this->pageCount : false)) {
+            return false;
+        }
+        return true;
+    }
+
+    public function getFirstPage()
+    {
+        return $this[1];
+    }
+
+    public function getLastPage()
+    {
+        return $this[$this->pageCount];
+    }
+
+    public function getPreviousPage($page)
+    {
+        // This will return null if previous page number is invalid
+        return $this->getPage($page->num - 1);
+    }
+
+    public function getNextPage($page)
+    {
+        // This will return null if next page number is invalid
+        return $this->getPage($page->num + 1);
+    }
+
+    public function calcPreviousPageNumber($num)
+    {
+        if ($num > 1) {
+            return $num - 1;
+        }
+    }
+
+    public function calcNextPageNumber($num)
+    {
+        if ($num < $this->pageCount) {
+            return $num + 1;
+        }
+    }
+
+    public function calcPageFromOffset($offset)
+    {
+        return (int)floor($offset / $this->pageSize) + 1;
+    }
+
+    public function calcOffsetFromPage($page)
+    {
+        $idx = $page - 1;
         $offset = $idx * $this->pageSize;
-        return new PaginationPage($offset, $this->pageSize, $num);
+        return $offset;
+    }
+
+    public function calcPageCount()
+    {
+        return max(1, (int)ceil($this->count/$this->pageSize));
+    }
+
+    // property access
+    public function __get($name)
+    {
+        if ($name == 'pageCount') {
+            return $this->pageCount = $this->calcPageCount();
+        } elseif ($name == 'firstPage') {
+            return $this->getFirstPage();
+        } elseif ($name == 'lastPage') {
+            return $this->getLastPage();
+        }
+        throw new \Exception("No such property '$name'");
+    }
+
+    public function __isset($name)
+    {
+        return $name == 'pageCount' || $name == 'firstPage' || $name == 'lastPage';
+    }
+
+    public function __slots()
+    {
+        return array('pageCount', 'firstPage', 'lastPage');
     }
 
     // ArrayAccess, we always return a Page instance even if outside range
     public function offsetExists($num)
     {
-        if ($num < 1 || ($this->total !== null ? $num > $this->total*$this->pageSize : false)) {
-            return false;
-        }
-        return true;
+        return $this->pageExists($num);
     }
 
     public function offsetGet($num)
     {
         $page = $this->getPage($num);
         if ($page == null) {
-            return new PaginationPage(0, $this->pageSize, 1);
+            return $this->lastPage;
         }
         return $page;
     }
 
     public function offsetSet($num, $val)
     {
-        // Ignore
+        throw new \Exception("Cannot set page entries on class '" . get_class($this) . "'");
     }
 
     public function offsetUnset($num)
     {
-        // Ignore
+        throw new \Exception("Cannot unset page entries on class '" . get_class($this) . "'");
     }
 }
