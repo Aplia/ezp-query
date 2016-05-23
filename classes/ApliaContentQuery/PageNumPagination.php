@@ -20,9 +20,9 @@ class PageNumPagination implements \ArrayAccess, BasePagination
         }
     }
 
-    public static function resolvePage($query, $pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null)
+    public static function resolvePage($query, $pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null, array $params = null)
     {
-        $paginator = new self($pageSize, $pageVariable, $namedSizes, $count);
+        $paginator = new static($pageSize, $pageVariable, $namedSizes, $count, $params);
         return $paginator[$paginator->getQueryPage($query)];
     }
 
