@@ -32,9 +32,9 @@ class PageNumPagination implements \ArrayAccess, BasePagination
 
     public function getQueryPage($queryParams)
     {
-        if ( isset( $queryParams['page'] ) ) {
+        if (isset($queryParams['page']) && $queryParams['page']) {
             return (int)$queryParams['page'];
-        } else if ( isset( $queryParams['offset'] ) ) {
+        } else if (isset($queryParams['offset']) && $queryParams['offset']) {
             $offset = (int)$queryParams['offset'];
             return $this->calcPageFromOffset($offset);
         }
