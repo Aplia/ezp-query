@@ -9,20 +9,24 @@ class PageNumPagination implements \ArrayAccess, BasePagination
     public $namedSizes = null;
     public $pageClass = '\\ApliaContentQuery\\PaginationPage';
 
-    public function __construct($pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null, array $params = null)
+    public function __construct($count = null, $pageSize = 10, array $params = null)
     {
         $this->pageSize = $pageSize;
         $this->count = $count;
-        $this->pageVariable = $pageVariable;
-        $this->namedSizes = $namedSizes;
+        if (isset($params['pageVariable'])) {
+            $this->pageVariable = $params['pageVariable'];
+        }
+        if (isset($params['namedSizes'])) {
+            $this->namedSizes = $params['namedSizes'];
+        }
         if (isset($params['pageClass'])) {
             $this->pageClass = $params['pageClass'];
         }
     }
 
-    public static function resolvePage($query, $pageSize = 10, $pageVariable = null, $namedSizes = null, $count = null, array $params = null)
+    public static function resolvePage($query, $count = null, $pageSize = 10, array $params = null)
     {
-        $paginator = new static($pageSize, $pageVariable, $namedSizes, $count, $params);
+        $paginator = new static($count, $pageSize, $params);
         return $paginator[$paginator->getQueryPage($query)];
     }
 
