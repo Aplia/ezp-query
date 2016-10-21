@@ -1,5 +1,5 @@
 <?php
-namespace ApliaContentQuery;
+namespace Aplia\Content\Query;
 
 abstract class IntegerFieldFilter extends FieldFilterBase
 {

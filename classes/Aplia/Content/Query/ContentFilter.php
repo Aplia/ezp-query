@@ -1,5 +1,5 @@
 <?php
-namespace ApliaContentQuery;
+namespace Aplia\Content\Query;
 
 /**
 * Helper class to aid in converting FieldFilter classes into content class attribute and extended filters.

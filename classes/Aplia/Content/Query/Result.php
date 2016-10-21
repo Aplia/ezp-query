@@ -1,5 +1,5 @@
 <?php
-namespace ApliaContentQuery;
+namespace Aplia\Content\Query;
 
 class Result
 {

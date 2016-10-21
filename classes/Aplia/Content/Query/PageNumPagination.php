@@ -1,5 +1,5 @@
 <?php
-namespace ApliaContentQuery;
+namespace Aplia\Content\Query;
 
 class PageNumPagination implements \ArrayAccess, BasePagination
 {
@@ -7,7 +7,7 @@ class PageNumPagination implements \ArrayAccess, BasePagination
     public $count = null;
     public $pageVariable = null;
     public $namedSizes = null;
-    public $pageClass = '\\ApliaContentQuery\\PaginationPage';
+    public $pageClass = '\\Aplia\\Content\\Query\\PaginationPage';
 
     public function __construct($count = null, $pageSize = 10, array $params = null)
     {

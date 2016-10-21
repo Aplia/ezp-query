@@ -16,7 +16,7 @@
     },
     "autoload": {
         "psr-4": {
-            "ApliaContentQuery\\": "classes/ApliaContentQuery"
+            "Aplia\\": "classes/Aplia"
         }
     }
 }
