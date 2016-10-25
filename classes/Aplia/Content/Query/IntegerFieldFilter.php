@@ -1,7 +1,7 @@
 <?php
 namespace Aplia\Content\Query;
 
-abstract class IntegerFieldFilter extends FieldFilterBase
+class IntegerFieldFilter extends FieldFilterBase
 {
     public $queryParam = null;
 

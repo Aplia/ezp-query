@@ -5,6 +5,8 @@ abstract class FieldFilterBase
 {
     public $selected = array();
     public $allowInput = true;
+    public $operator = '=';
+    public $contentAttribute;
     //$items;
     //$selectedItems;
 
@@ -14,6 +16,8 @@ abstract class FieldFilterBase
     public function __construct(array $params = null)
     {
         $this->allowInput = isset($params['allowInput']) ? $params['allowInput'] : true;
+        $this->operator = isset($params['operator']) ? $params['operator'] : '=';
+        $this->contentAttribute = isset($params['contentAttribute']) ? $params['contentAttribute'] : null;
     }
 
     // Attribute access
@@ -75,7 +79,10 @@ abstract class FieldFilterBase
         }
     }
 
-    protected abstract function buildFilter();
+    protected function buildFilter()
+    {
+        return null;
+    }
 
     public abstract function resolveQuery($queryParams);
 
@@ -84,10 +91,28 @@ abstract class FieldFilterBase
         $this->selected = $values;
     }
 
-    public function getContentFilter()
+    public function hasSelected()
     {
-        // Return array with either 'extended' or 'attribute'.
-        return null;
+        return $this->selected;
+    }
+
+    public function getContentFilter($mode='attribute')
+    {
+        if ($this->contentAttribute && $this->hasSelected()) {
+            if ($mode == 'attribute') {
+                return array('attribute' =>
+                    array(
+                        array($this->contentAttribute, $this->operator, $this->selected),
+                    ),
+                );
+            } elseif ($mode == 'nested') {
+                return array('nested' =>
+                    array(
+                        array($this->contentAttribute, $this->selected, $this->operator),
+                    ),
+                );
+            }
+        }
     }
 
     public function getNestedFilter()
