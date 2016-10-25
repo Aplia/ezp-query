@@ -1,4 +1,7 @@
 <?php
+namespace Aplia\Content\Query;
+
+use Aplia\Content\Exceptions\TypeError;
 
 class ContentHelper
 {
@@ -100,14 +103,31 @@ class ContentHelper
 
         $ids = array();
         foreach ($nodes as $item) {
-            if ($item instanceof \eZContentObjectTreeNode) {
-                $ids[] = $item->attribute('node_id');
-            } else if ($item instanceof \eZContentObject) {
-                $ids[] = $item->attribute('main_node_id');
-            } else {
-                $ids[] = $item;
-            }
+            $ids[] = self::getNodeId($item);
         }
         return $ids;
+    }
+
+    /**
+    * Get a node ID from a content node, content object or numeric.
+    *
+    * @throws TypeError if the type or class is not supported.
+    * @return int
+    */
+    public static function getNodeId($node)
+    {
+        if ($node === null) {
+            return null;
+        }
+
+        if ($node instanceof \eZContentObjectTreeNode) {
+            return $node->attribute('node_id');
+        } else if ($node instanceof \eZContentObject) {
+            return $node->attribute('main_node_id');
+        } else if (is_numeric($node)) {
+            return $node;
+        } else {
+            throw new TypeError("The node type is supported: " . is_object($node) ? get_class($node) : gettype($node));
+        }
     }
 }
