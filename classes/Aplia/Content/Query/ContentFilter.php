@@ -6,15 +6,19 @@ namespace Aplia\Content\Query;
 */
 class ContentFilter
 {
+    public $includeClasses = true;
     public $classes;
     public $attributes;
-    public $extended;
+    public $nestedAttributes;
+
+    protected $_extended;
+    protected $_nested;
 
     public function __construct($classes = array(), $attributes = array(), $extended = null)
     {
         $this->classes = $classes;
         $this->attributes = $attributes;
-        $this->extended = $extended;
+        $this->_extended = $extended;
     }
 
     public function __get($name)
@@ -24,7 +28,16 @@ class ContentFilter
         } else if ($name == 'hasAttributes') {
             return (bool)$this->attributes;
         } else if ($name == 'hasExtended') {
-            return $this->extended !== null && $this->extended['params'];
+            return (bool)$this->nestedAttributes || $this->extended !== null && $this->extended['params'];
+        } else if ($name == 'extended') {
+            if ($this->nestedAttributes) {
+                if ($this->_nested === null) {
+                    $this->_nested = $this->buildNested();
+                }
+                return $this->_nested;
+            } else {
+                return $this->extended;
+            }
         }
     }
 
@@ -32,7 +45,8 @@ class ContentFilter
     {
         if (isset($items['classes'])) {
             $this->classes = array_unique(array_merge($this->classes, $items['classes']));
-        } else if (isset($items['extended'])) {
+        }
+        if (isset($items['extended'])) {
             $extFilter = $items['extended'];
             if ($this->extended === null) {
                 $this->extended = $extFilter;
@@ -45,19 +59,36 @@ class ContentFilter
         if (isset($items['attribute'])) {
             $this->attributes = array_merge( $this->attributes, $items['attribute'] );
         }
+        if (isset($items['nested'])) {
+            $this->nestedAttributes = array_merge( $this->nestedAttributes, $items['nested'] );
+        }
     }
 
-    public function setFilter(FieldFilterBase $filter)
+    public function setFilter(FieldFilterBase $filter, $mode='attribute')
     {
-        $attrFilter = $filter->getContentFilter();
+        $attrFilter = $filter->getContentFilter($mode);
         $this->merge($attrFilter);
     }
 
-    public function setFilters(array $filters)
+    public function setFilters(array $filters, $mode='attribute')
     {
         foreach ($filters as $filter)
         {
-            $this->setFilter($filter);
+            $this->setFilter($filter, $mode);
         }
+    }
+
+    protected function buildNested()
+    {
+        if (!$this->nestedAttributes) {
+            return null;
+        }
+        return array(
+            'id' => 'NestedFilterSet',
+            'params' => array(
+                'cond' => 'AND',
+                'attrs' => $this->nestedAttributes,
+            ),
+        );
     }
 }
