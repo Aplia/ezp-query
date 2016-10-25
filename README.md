@@ -3,7 +3,6 @@
 A set of classes to help with running queries against Content Objects/Nodes.
 It is divided in three main areas.
 
-- queryset
 - pagination
 - sorting
 - filtering
