@@ -1,7 +1,7 @@
 <?php
 namespace Aplia\Content\Query;
 
-class Result
+class Result implements \IteratorAggregate
 {
     public $items;
     public $total;
@@ -18,6 +18,12 @@ class Result
         $this->sortOrder = $sortOrder;
         $this->filters = $filters ? $filters : array();
         $this->contentFilter = $contentFilter;
+    }
+
+    // IteratorAggregate
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->items);
     }
 
     // eZ template access
