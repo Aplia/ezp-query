@@ -430,7 +430,7 @@ class QuerySet implements \IteratorAggregate
             'SortBy' => ($sortOrder && $sortOrder->sortArray) ? $sortOrder->sortArray : null,
         ), $parentNodeId );
         if ($items === null) {
-            throw new QueryError("No items returned from sub-tree query");
+            throw new QueryError("No item list returned from sub-tree query");
         }
 
         $filters = null;
