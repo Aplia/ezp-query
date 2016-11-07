@@ -35,6 +35,8 @@ class QuerySet implements \IteratorAggregate
     public $query = array();
 
     public $sortOrder;
+    public $sortField;
+    public $pageLimit;
     public $filterTypes = array();
     public $useClone = false;
 
@@ -410,6 +412,7 @@ class QuerySet implements \IteratorAggregate
             $sortOrder->resolveQuery($this->sortField);
         } else if ($this->sortQueryName !== null) {
             $query = $this->query;
+            $queryName = $this->sortQueryName;
             $sortOrder->resolveQuery(isset($query[$queryName]) ? $query[$queryName] : null);
         } else {
             // Use default sort
@@ -430,6 +433,7 @@ class QuerySet implements \IteratorAggregate
             throw new QueryError("No items returned from sub-tree query");
         }
 
+        $filters = null;
         return new Result($items, $totalCount, $page, $sortOrder, $filters, $contentFilter);
     }
 
