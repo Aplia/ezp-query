@@ -53,6 +53,7 @@ class QuerySet implements \IteratorAggregate
     public $_contentFilter;
 
     protected $_result;
+    protected $_isDirty = false;
 
     public function __construct(array $params=null)
     {
@@ -428,6 +429,13 @@ class QuerySet implements \IteratorAggregate
     */
     protected function calculateTotalCount()
     {
+        if ($this->_isDirty) {
+            $this->result = null;
+            $this->_totalCount = null;
+            $this->_contentFilter = null;
+            $this->_isDirty = false;
+        }
+
         if ($this->_contentFilter === null) {
             $contentFilter = $this->createFilter();
             $this->_contentFilter = $contentFilter;
@@ -460,6 +468,13 @@ class QuerySet implements \IteratorAggregate
     */
     protected function createResult()
     {
+        if ($this->_isDirty) {
+            $this->result = null;
+            $this->_totalCount = null;
+            $this->_contentFilter = null;
+            $this->_isDirty = false;
+        }
+
         if ($this->_contentFilter === null) {
             $contentFilter = $this->createFilter();
             $this->_contentFilter = $contentFilter;
@@ -705,9 +720,7 @@ class QuerySet implements \IteratorAggregate
             $clone = $this;
         }
         if ($markDirty) {
-            $clone->result = null;
-            $clone->_totalCount = null;
-            $clone->_contentFilter = null;
+            $clone->_isDirty = true;
         }
         return $clone;
     }
