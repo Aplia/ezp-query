@@ -719,12 +719,21 @@ class QuerySet implements \IteratorAggregate
             $attributeIdentifier = $name;
         }
         if (!is_object($type)) {
+            $operator = '=';
+            if (preg_match("/^(.+):(.+)$/", $attributeIdentifier, $matches)) {
+                $attributeIdentifier = $matches[1];
+                $operator = $matches[2];
+            }
+            $filterParams = array(
+                'contentAttribute' => $attributeIdentifier,
+                'operator' => $operator
+             );
             if ($type == 'int') {
-                $filter = new IntegerFieldFilter(array('contentAttribute' => $attributeIdentifier));
+                $filter = new IntegerFieldFilter($filterParams);
             } elseif ($type == 'bool') {
-                $filter = new BoolFieldFilter(array('contentAttribute' => $attributeIdentifier));
+                $filter = new BoolFieldFilter($filterParams);
             } elseif ($type == 'string') {
-                $filter = new StringFieldFilter(array('contentAttribute' => $attributeIdentifier));
+                $filter = new StringFieldFilter($filterParams);
             } else {
                 throw new FilterTypeError("Unsupported filter type: $type");
             }
