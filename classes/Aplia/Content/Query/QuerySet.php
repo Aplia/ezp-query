@@ -341,6 +341,8 @@ class QuerySet implements \IteratorAggregate
     * Changes result to be paginated, the chosen page is taken from a query parameter.
     * The name of the page parameter is set in the constructor.
     *
+    * If no page limit has been set it switches to use the default.
+    *
     * @param $params Extra parameters sent to the paginator.
     * @return Aplia\Content\Query\QuerySet
     */
@@ -351,11 +353,16 @@ class QuerySet implements \IteratorAggregate
         if ($params !== null) {
             $this->pageParams = $params;
         }
+        if ($this->pageLimit === null) {
+            $this->pageLimit = 'default';
+        }
         return $clone;
     }
 
     /**
     * Changes result to be paginated and sets the page to use.
+    *
+    * If no page limit has been set it switches to use the default.
     *
     * @param $num The page number to use for the result.
     * @return Aplia\Content\Query\QuerySet
@@ -365,14 +372,19 @@ class QuerySet implements \IteratorAggregate
         $clone = $this->makeClone(true);
         $clone->paginate = true;
         $clone->pageNumber = $num;
+        if ($this->pageLimit === null) {
+            $this->pageLimit = 'default';
+        }
         return $clone;
     }
 
     /**
     * Changes page limit to $limit, this overrides any default limit or
     * settings based limit.
+    * A special value of 'default' can be used to use the default
+    * value as the default.
     *
-    * @param $limit The page limit or null to reset to default.
+    * @param $limit The page limit, 'default' to reset to default or null to disable.
     * @return Aplia\Content\Query\QuerySet
     */
     public function pageLimit($limit)
@@ -380,6 +392,39 @@ class QuerySet implements \IteratorAggregate
         $clone = $this->makeClone(true);
         $clone->pageLimit = $limit;
         return $clone;
+    }
+
+    /**
+     * Creates an iterator which will walk over all items in based
+     * the current filters.
+     * The iterator will only fetch n items at a time based on the
+     * page limit.
+     *
+     * This can be used to easily and safely traverse over an entire
+     * set without worrying about page sizes and optimal fetches.
+     *
+     * @return Aplia\Content\Query\QuerySetIterator
+     */
+    public function iterator()
+    {
+        if (!$this->paginate) {
+            $this->paginate = true;
+        }
+        $this->pageParams = null;
+        // Make sure a page limit exists, if not use defaults
+        if ($this->pageLimit === null) {
+            $this->pageLimit = 'default';
+        }
+
+        $totalCount = null;
+        if ($this->_totalCount === null) {
+            $totalCount = $this->calculateTotalCount();
+            $this->_totalCount = $totalCount;
+        } else {
+            $totalCount = $this->_totalCount;
+        }
+        $paginator = $this->createPaginator($totalCount, $this->pageLimit);
+        return new QuerySetIterator($this, $paginator);
     }
 
     /**
@@ -587,18 +632,18 @@ class QuerySet implements \IteratorAggregate
     */
     protected function createPaginator($totalCount, $pageLimit = null)
     {
-        if (!$this->paginate) {
+        if (!$this->paginate || $pageLimit === null) {
             return null;
         }
-        $pageLimit = $pageLimit === null ? $this->getDefaultPageLimit() : $pageLimit;
+        $pageLimit = $pageLimit === 'default' ? $this->getDefaultPageLimit() : $pageLimit;
         $class = $this->paginatorClass;
-        $paginator = new $class($totalCount, $pageLimit, $pageParams);
+        $paginator = new $class($totalCount, $pageLimit, $this->pageParams);
         return $paginator;
     }
 
     protected function createPage($paginator)
     {
-        if (!$this->paginate) {
+        if (!$this->paginate || $paginator === null) {
             return null;
         }
         $pageNumber = $this->pageNumber;
