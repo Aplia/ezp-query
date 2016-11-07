@@ -53,7 +53,7 @@ class QuerySet implements \IteratorAggregate
         $this->defaultPageLimit = Arr::get($params, 'defaultPageLimit');
         $this->filterMode = Arr::get($params, 'filterMode', 'attribute');
         $this->filters = Arr::get($params, 'filterValues', array());
-        $this->depth = Arr::get($params, 'depth', 1);
+        $this->depth = Arr::get($params, 'depth', null);
         $this->paginate = Arr::get($params, 'paginate', false);
         $this->pageNumber = Arr::get($params, 'pageNumber');
         if (isset($params['sortChoices'])) {
