@@ -49,8 +49,8 @@ class QuerySet implements \IteratorAggregate
     public $useClone = false;
 
     // Caches
-    public $_totalCount;
-    public $_contentFilter;
+    protected $_totalCount;
+    protected $_contentFilter;
 
     protected $_result;
     protected $_isDirty = false;
