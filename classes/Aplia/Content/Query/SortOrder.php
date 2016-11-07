@@ -54,7 +54,7 @@ class SortOrder
         return null;
     }
 
-    public function resolveQuery($queryValue)
+    public function resolveQuery($queryValue=null)
     {
         $this->originalIdentifier = $queryValue;
         $result = $this->decode($queryValue);

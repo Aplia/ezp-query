@@ -27,6 +27,14 @@ class QuerySet implements \IteratorAggregate
     public $sortChoices = array();
     public $defaultSortOrder = 'newest';
     public $sortQueryName = 'sort';
+    /**
+    * Determines where the sort field is taken from by default.
+    * Default is to sort by property.
+    *
+    * - query - Read sort value from a query parameter.
+    * - property - Read sort value from a property on the query-set.
+    */
+    public $sortMode = 'property';
     public $filterMode = 'attribute';
     public $filters = array();
     /**
@@ -242,6 +250,7 @@ class QuerySet implements \IteratorAggregate
     public function sortByField($field=null)
     {
         $clone = $this->makeClone(true);
+        $clone->sortMode = 'property';
         $clone->setSortByField($field);
         return $clone;
     }
@@ -255,6 +264,7 @@ class QuerySet implements \IteratorAggregate
     public function sortByQuery($queryName=null)
     {
         $clone = $this->makeClone(true);
+        $clone->sortMode = 'query';
         $clone->setSortByQuery($queryName);
         return $clone;
     }
@@ -408,15 +418,24 @@ class QuerySet implements \IteratorAggregate
             $sortOrder = $this->createSortHandler();
             $this->sortOrder = $sortOrder;
         }
-        if ($this->sortField !== null) {
-            $sortOrder->resolveQuery($this->sortField);
-        } else if ($this->sortQueryName !== null) {
-            $query = $this->query;
-            $queryName = $this->sortQueryName;
-            $sortOrder->resolveQuery(isset($query[$queryName]) ? $query[$queryName] : null);
+        if ($this->sortMode === 'property') {
+            if ($this->sortField !== null) {
+                $sortOrder->resolveQuery($this->sortField);
+            } else {
+                // Use default sort
+                $sortOrder->resolveQuery();
+            }
+        } else if ($this->sortMode === 'query') {
+            if ($this->sortQueryName !== null) {
+                $query = $this->query;
+                $queryName = $this->sortQueryName;
+                $sortOrder->resolveQuery(isset($query[$queryName]) ? $query[$queryName] : null);
+            } else {
+                // Use default sort
+                $sortOrder->resolveQuery();
+            }
         } else {
-            // Use default sort
-            $sortOrder->resolveQuery();
+            throw new QueryError("Unsupported sort-mode: " . $this->sortMode);
         }
 
         $items = \eZContentObjectTreeNode::subTreeByNodeId( array(
