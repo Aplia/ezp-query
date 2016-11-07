@@ -393,7 +393,7 @@ class QuerySet implements \IteratorAggregate
         $attributeFilter = ($contentFilter && $contentFilter->hasAttributes) ? $contentFilter->attributes : false;
         $classFilter = $contentFilter->includeClasses ? 'include' : 'exclude';
         $parentNodeId = $this->parentNodeId !== null ? $this->parentNodeId : 2;
-        $totalCount = \eZContentObjectTreeNode::subTreeCountByNodeID(array(
+        $totalCount = (int)\eZContentObjectTreeNode::subTreeCountByNodeID(array(
             'ClassFilterType' => $classFilter,
             'ClassFilterArray' => $contentFilter->classes,
             'AttributeFilter' => $attributeFilter,
