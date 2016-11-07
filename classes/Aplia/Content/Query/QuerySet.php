@@ -194,6 +194,21 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
+    * Executes the query and returns the matching items.
+    * The result object is cached so calling this method multiple
+    * times is efficient.
+    *
+    * @return array
+    */
+    public function items()
+    {
+        if ($this->_result === null) {
+            $this->_result = $this->createResult();
+        }
+        return $this->_result->items;
+    }
+
+    /**
     * Calculates the total number of items matching the current filters.
     * The count value is cached so calling this method multiple
     * times is efficient.
