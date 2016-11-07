@@ -787,8 +787,7 @@ class QuerySet implements \IteratorAggregate
     // IteratorAggregate
     public function getIterator()
     {
-        $result = $this->result();
-        return new \ArrayIterator($result->items);
+        return $this->iterator();
     }
 
     // eZ template access
