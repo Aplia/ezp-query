@@ -48,6 +48,10 @@ class QuerySet implements \IteratorAggregate
     public $filterTypes = array();
     public $useClone = false;
 
+    // Caches
+    public $_totalCount;
+    public $_contentFilter;
+
     protected $_result;
 
     public function __construct(array $params=null)
@@ -176,7 +180,7 @@ class QuerySet implements \IteratorAggregate
 
     /**
     * Executes the query and returns the result object.
-    * The result object is cached so it calling this method multiple
+    * The result object is cached so calling this method multiple
     * times is efficient.
     *
     * @return Aplia\Content\Query\Result
@@ -187,6 +191,22 @@ class QuerySet implements \IteratorAggregate
             $this->_result = $this->createResult();
         }
         return $this->_result;
+    }
+
+    /**
+    * Calculates the total number of items matching the current filters.
+    * The count value is cached so calling this method multiple
+    * times is efficient.
+    * Note: The total amount excludes any paginator.
+    *
+    * @return int
+    */
+    public function count()
+    {
+        if ($this->_totalCount === null) {
+            $this->_totalCount = $this->calculateTotalCount();
+        }
+        return $this->_totalCount;
     }
 
     /**
@@ -387,14 +407,18 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
-    * Creates a new result object based on the current filters,
-    * pagination and sorting and returns it.
+    * Calculates the total count for the current query-set and returns it.
     *
     * @return Aplia\Content\Query\Result
     */
-    protected function createResult()
+    protected function calculateTotalCount()
     {
-        $contentFilter = $this->createFilter();
+        if ($this->_contentFilter === null) {
+            $contentFilter = $this->createFilter();
+            $this->_contentFilter = $contentFilter;
+        } else {
+            $contentFilter = $this->_contentFilter;
+        }
         $extendedFilter = null;
         if ($contentFilter && $contentFilter->hasExtended) {
             $extendedFilter = $contentFilter->extended;
@@ -410,9 +434,54 @@ class QuerySet implements \IteratorAggregate
             'ExtendedAttributeFilter' => $extendedFilter,
             'Depth' => $this->depth,
          ), $parentNodeId);
+        return $totalCount;
+    }
 
-        $paginator = $this->createPaginator($totalCount, $this->pageLimit);
-        $page = $this->createPage($paginator);
+    /**
+    * Creates a new result object based on the current filters,
+    * pagination and sorting and returns it.
+    *
+    * @return Aplia\Content\Query\Result
+    */
+    protected function createResult()
+    {
+        if ($this->_contentFilter === null) {
+            $contentFilter = $this->createFilter();
+            $this->_contentFilter = $contentFilter;
+        } else {
+            $contentFilter = $this->_contentFilter;
+        }
+        $this->_contentFilter = $contentFilter;
+        $extendedFilter = null;
+        if ($contentFilter && $contentFilter->hasExtended) {
+            $extendedFilter = $contentFilter->extended;
+        }
+
+        $attributeFilter = ($contentFilter && $contentFilter->hasAttributes) ? $contentFilter->attributes : false;
+        $classFilter = $contentFilter->includeClasses ? 'include' : 'exclude';
+        $parentNodeId = $this->parentNodeId !== null ? $this->parentNodeId : 2;
+
+        $totalCount = null;
+        if ($this->paginate) {
+            if ($this->_totalCount === null) {
+                $totalCount = (int)\eZContentObjectTreeNode::subTreeCountByNodeID(array(
+                    'ClassFilterType' => $classFilter,
+                    'ClassFilterArray' => $contentFilter->classes,
+                    'AttributeFilter' => $attributeFilter,
+                    'ExtendedAttributeFilter' => $extendedFilter,
+                    'Depth' => $this->depth,
+                 ), $parentNodeId);
+                $this->_totalCount = $totalCount;
+            } else {
+                $totalCount = $this->_totalCount;
+            }
+        }
+
+        $page = null;
+        if ($totalCount !== null) {
+            $paginator = $this->createPaginator($totalCount, $this->pageLimit);
+            $page = $this->createPage($paginator);
+        }
         $sortOrder = $this->sortOrder;
         if ($sortOrder === null) {
             $sortOrder = $this->createSortHandler();
@@ -622,6 +691,8 @@ class QuerySet implements \IteratorAggregate
         }
         if ($markDirty) {
             $clone->result = null;
+            $clone->_totalCount = null;
+            $clone->_contentFilter = null;
         }
         return $clone;
     }
