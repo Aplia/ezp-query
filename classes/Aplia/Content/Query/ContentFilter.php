@@ -60,6 +60,9 @@ class ContentFilter
             $this->attributes = array_merge( $this->attributes, $items['attribute'] );
         }
         if (isset($items['nested'])) {
+            if ($this->nestedAttributes === null) {
+                $this->nestedAttributes = array();
+            }
             $this->nestedAttributes = array_merge( $this->nestedAttributes, $items['nested'] );
         }
     }
