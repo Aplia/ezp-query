@@ -19,7 +19,7 @@ class QuerySet implements \IteratorAggregate
 
     public $parentNodeId;
     public $classes = array();
-    public $depth = 1;
+    public $depth = null;
     public $paginate = false;
     public $pageNumber = null;
     public $pageParams = null;
