@@ -36,7 +36,7 @@ class ContentFilter
                 }
                 return $this->_nested;
             } else {
-                return $this->extended;
+                return $this->_extended;
             }
         }
     }
@@ -49,9 +49,9 @@ class ContentFilter
         if (isset($items['extended'])) {
             $extFilter = $items['extended'];
             if ($this->extended === null) {
-                $this->extended = $extFilter;
+                $this->_extended = $extFilter;
             } else if ($this->extended['id'] == $extFilter['id']) {
-                $this->extended['params'] = array_merge($this->extended['params'], $extFilter['params']);
+                $this->_extended['params'] = array_merge($this->extended['params'], $extFilter['params']);
             } else {
                 throw new Exception('Cannot set extended attributes \'' . $extFilter['id'] . '\', it has already been defined with a different ID: \'' . $this->extended['id'] . '\'');
             }
