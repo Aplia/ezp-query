@@ -2,6 +2,16 @@
 
 Changelog for the `contentquery` package.
 
+## 1.2.0
+- Depth and page limit is now off by default. The query set will encompass the entire
+  set according to the filters.
+- New method `count()` to return the count for the current set.
+- Sort mode is now off by default.
+- New method `items()`  to return just the item array.
+- New method `iterator()` to safely and easily iterate over all items in the set.
+  The iterator will use paged loading internally to avoid loading too many items
+  at a time.
+
 ## 1.1.0
 
 - Introduced new class `QuerySet` which provides a simpler interface for working
