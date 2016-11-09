@@ -814,6 +814,9 @@ class QuerySet implements \IteratorAggregate
         }
         foreach ($classes as $identifier) {
             $contentClass = \eZContentClass::fetchByIdentifier($identifier);
+            if (!$contentClass) {
+                throw new FilterTypeError("Failed to fetch filters for class: $identifier");
+            }
             $dataMap = $contentClass->dataMap();
             foreach ($dataMap as $attributeIdentifier => $attribute) {
                 $filterIdentifier = "$identifier/$attributeIdentifier";
