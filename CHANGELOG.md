@@ -2,6 +2,9 @@
 
 Changelog for the `contentquery` package.
 
+## 1.3.0
+- New method `loadFilters` for adding filters from the content class attributes.
+
 ## 1.2.0
 - Depth and page limit is now off by default. The query set will encompass the entire
   set according to the filters.

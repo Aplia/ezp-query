@@ -83,6 +83,20 @@ foreach ($set as $node) {
 }
 ```
 
+Load filters from the content class:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->classes('article')
+  ->loadFilters()
+  ->filter('article/title', 'My title');
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
 To explicitly get the result object (e.g. for templates) use `result()`.
 
 ## Pagination
