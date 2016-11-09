@@ -37,6 +37,7 @@ class QuerySet implements \IteratorAggregate
     public $sortMode = 'property';
     public $filterMode = 'attribute';
     public $filters = array();
+    public $objectFilters = array();
     /**
     * The query variables, defaults to $_GET.
     */
@@ -66,6 +67,7 @@ class QuerySet implements \IteratorAggregate
         $this->defaultPageLimit = Arr::get($params, 'defaultPageLimit');
         $this->filterMode = Arr::get($params, 'filterMode', 'attribute');
         $this->filters = Arr::get($params, 'filterValues', array());
+        $this->objectFilters = Arr::get($params, 'objectFilterValues', array());
         $this->depth = Arr::get($params, 'depth', null);
         $this->paginate = Arr::get($params, 'paginate', false);
         $this->pageNumber = Arr::get($params, 'pageNumber');
@@ -667,6 +669,7 @@ class QuerySet implements \IteratorAggregate
         $allowUserFilter = false;
         $filterTypes = $this->filterTypes;
         $filterValues = $this->filters;
+        $objectFilters = $this->objectFilters;
 
         if ($filterValues) {
             FieldFilterBase::setFilterValues($filterTypes, $filterValues);
@@ -677,6 +680,11 @@ class QuerySet implements \IteratorAggregate
 
         $class = $this->filterClass;
         $contentFilter = new $class($this->classes);
+        if ($objectFilters) {
+            $contentFilter->merge(array(
+                'nested' => $objectFilters,
+            ));
+        }
         $contentFilter->setFilters($filterTypes, $this->filterMode);
 
         return $contentFilter;
@@ -687,7 +695,69 @@ class QuerySet implements \IteratorAggregate
     */
     protected function setFilter($name, $value)
     {
-        $this->filters[$name] = $value;
+        if (isset($this->filterTypes[$name])) {
+            $this->filters[$name] = $value;
+        } elseif ($name == 'path' || $name == 'section' || $name == 'state' || $name == 'depth' || $name == 'class_identifier' || $name == 'class_name' || $name == 'priority' || $name == 'name' || $name == 'visibility') {
+            $this->objectFilters[] = array($name, $value);
+        } elseif ($name == 'published' || $name == 'modified' || $name == 'modified_subnode') {
+            if ($value instanceof \DateTime) {
+                $value = $value->getTimestamp();
+            }
+            $this->objectFilters[] = array($name, $value);
+        } elseif ($name == 'node_id') {
+            if (is_object($value)) {
+                if ($value instanceof \eZContentObjectTreeNode) {
+                    $value = $value->attribute('node_id');
+                } elseif ($value instanceof \eZContentObject) {
+                    $value = $value->attribute('main_node_id');
+                }
+            }
+            $this->objectFilters[] = array($name, $value);
+        } elseif ($name == 'contentobject_id') {
+            if (is_object($value)) {
+                if ($value instanceof \eZContentObjectTreeNode) {
+                    $value = $value->attribute('contentobject_id');
+                } elseif ($value instanceof \eZContentObject) {
+                    $value = $value->attribute('id');
+                }
+            }
+            $this->objectFilters[] = array($name, $value);
+        } elseif ($name == 'path_element') {
+            if (is_object($value)) {
+                if ($value instanceof \eZContentObjectTreeNode) {
+                    $value = $value->attribute('contentobject_id');
+                } elseif ($value instanceof \eZContentObject) {
+                    $value = $value->attribute('id');
+                }
+            }
+            $this->objectFilters[] = array($name, $value);
+        } elseif ($name == 'class_identifier') {
+            if (is_object($value)) {
+                if ($value instanceof \eZContentClass) {
+                    $value = $value->attribute('identifier');
+                } elseif ($value instanceof \eZContentObjectTreeNode || $value instanceof \eZContentObject) {
+                    $value = $value->attribute('class_identifier');
+                }
+            }
+            $this->objectFilters[] = array($name, $value);
+        } elseif ($name == 'class_name') {
+            if (is_object($value)) {
+                if ($value instanceof \eZContentClass) {
+                    $value = $value->attribute('name');
+                } elseif ($value instanceof \eZContentObjectTreeNode || $value instanceof \eZContentObject) {
+                    $value = $value->attribute('class_name');
+                }
+            }
+            $this->objectFilters[] = array($name, $value);
+        } else {
+            // Detect class/attribute strings and use them as filters
+            // If not they are placed as object filters
+            if (strpos($name, "/") === false) {
+                $this->objectFilters[] = array($name, $value);
+            } else {
+                $this->filters[$name] = $value;
+            }
+        }
     }
 
     /**
