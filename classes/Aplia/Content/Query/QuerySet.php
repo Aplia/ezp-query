@@ -247,6 +247,29 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
+     * Loads all specified content classes and adds filters for each of the
+     * attributes in them. The type of filter is based on the data-type.
+     *
+     * The handler for each data-type is taken from contentquery.ini
+     * in the group AttributeFilters and the variable Handlers.
+     * This is an associative array where the key is the data-type string
+     * and the value is the handler class to instantiate.
+     *
+     * If no handler matches it uses one of the builtin types:
+     * - ezinteger - Integer filter
+     * - ezboolean - Boolean filter
+     * All else is defined as a string filter.
+     *
+     * @param $classes if null then it uses classes defined on the query-set.
+     */
+    public function loadFilters(array $classes=null)
+    {
+        $clone = $this->makeClone(true);
+        $clone->loadClassFilters($classes);
+        return $clone;
+    }
+
+    /**
     * Sets a single filter value with $name and $value,
     * or multiple values by passing an array in $name.
     * When passing multiple filters the array must associative with
@@ -756,6 +779,58 @@ class QuerySet implements \IteratorAggregate
                 $this->objectFilters[] = array($name, $value);
             } else {
                 $this->filters[$name] = $value;
+            }
+        }
+    }
+
+    /**
+     * Loads all specified content classes and adds filters for each of the
+     * attributes in them. The type of filter is based on the data-type.
+     *
+     * The handler for each data-type is taken from contentquery.ini
+     * in the group AttributeFilters and the variable Handlers.
+     * This is an associative array where the key is the data-type string
+     * and the value is the handler class to instantiate.
+     *
+     * If no handler matches it uses one of the builtin types:
+     * - ezinteger - Integer filter
+     * - ezboolean - Boolean filter
+     * All else is defined as a string filter.
+     *
+     * @param $classes if null then it uses classes defined on the query-set.
+     */
+    protected function loadClassFilters(array $classes=null)
+    {
+        if ($classes === null) {
+            $classes = $this->classes;
+        }
+        if (!$classes) {
+            return;
+        }
+        $settings = \eZINI::instance('contentquery.ini');
+        $handlers = array();
+        if ($settings->hasVariable('AttributeFilters', 'Handlers')) {
+            $handlers = $settings->variable('AttributeFilters', 'Handlers');
+        }
+        foreach ($classes as $identifier) {
+            $contentClass = \eZContentClass::fetchByIdentifier($identifier);
+            $dataMap = $contentClass->dataMap();
+            foreach ($dataMap as $attributeIdentifier => $attribute) {
+                $filterIdentifier = "$identifier/$attributeIdentifier";
+                $typeString = $attribute->attribute('data_type_string');
+                if (isset($handlers[$typeString])) {
+                    $handlerClass = $handlers[$typeString];
+                    $handler = new $handlerClass(array(
+                        'attribute' => $attribute,
+                    ));
+                    $this->defineFilter($filterIdentifier, $handler);
+                } elseif ($typeString == 'ezinteger' || $typeString == 'ezselection') {
+                    $this->defineFilter($filterIdentifier, 'int', $filterIdentifier);
+                } elseif ($typeString == 'ezboolean') {
+                    $this->defineFilter($filterIdentifier, 'bool', $filterIdentifier);
+                } else{
+                    $this->defineFilter($filterIdentifier, 'string', $filterIdentifier);
+                }
             }
         }
     }
