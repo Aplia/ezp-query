@@ -1,5 +1,5 @@
 {
-    "name": "aplia/contentquery",
+    "name": "aplia/query",
     "description": "API for doing content queries in eZ publish",
     "homepage": "https://bitbucket.org/aplia/library-apliaquery",
     "license": "MIT",
@@ -9,6 +9,9 @@
             "homepage": "https://bitbucket.org/aplia"
         }
     ],
+    "replace": {
+        "aplia/contentquery": "*"
+    },
     "require": {
         "php": ">=5.3",
         "composer/composer": ">=1.0",
