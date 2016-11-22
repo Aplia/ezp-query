@@ -16,6 +16,58 @@ This class combines the functionality of all the other system into one easy
 to use interface. Once instantiated there are several methods which can be
 used to filter the set and return a new queryset instance.
 
+### Iterator usage
+
+The query-set acts as an iterator and can be passed to foreach statements
+directly.
+
+```
+<?php
+$set = new QuerySet();
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+The query-set is lazy and will only evaluate when needed. It will also
+cache results so iterating a second time without changing any filters
+will not access the database.
+
+### Chaining and cloning
+
+Most methods are designed to return a query-set instance upon completion
+to allow for chaining multiple methods.
+
+For instance:
+```
+<?php
+$set = new QuerySet();
+$newSet = $set->depth(1)->sortByField('a-z');
+// $set and $newSet are the same instance
+```
+
+The query-set can also be instructed to create new clones for each
+change that is made to it, this means that the chaining methods
+will create new copies and that the original instance is kept as-is.
+
+```
+<?php
+$set = new QuerySet(array('useClone' => true));
+$newSet = $set->depth(1)->sortByField('a-z');
+// $set and $newSet are different instances
+```
+
+To explicitly create a new clone call `copy()`:
+```
+<?php
+$set = new QuerySet();
+$newSet = $set->copy()->depth(1)->sortByField('a-z');
+// $set and $newSet are different instances
+```
+
+
+### List all children
+
 Example, list all children of the root node:
 
 ```
@@ -25,6 +77,8 @@ foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
 ```
+
+### List specific content class
 
 List only articles of the root node:
 
@@ -42,6 +96,8 @@ foreach ($set as $node) {
 }
 ```
 
+### List tree structure
+
 List entire tree of a given node (node id 42):
 
 ```
@@ -57,6 +113,8 @@ foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
 ```
+
+### List specific depth
 
 List a specific depth using an operator:
 
@@ -74,6 +132,8 @@ foreach ($set as $node) {
 }
 ```
 
+### Change sort order
+
 Change sort order to alphabetical:
 
 ```
@@ -85,6 +145,8 @@ foreach ($set as $node) {
 }
 ```
 
+### Paginate results
+
 Use pagination and fetch specific page:
 
 ```
@@ -95,6 +157,8 @@ foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
 ```
+
+### Filter on fields
 
 Filter by fields:
 
@@ -108,6 +172,8 @@ foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
 ```
+
+### Define filters from database
 
 Load filters from the content class:
 
@@ -123,6 +189,8 @@ foreach ($set as $node) {
 }
 ```
 
+### Accessing result object
+
 To explicitly get the result object (e.g. for templates) use `result()`.
 
 ```
@@ -131,7 +199,14 @@ $set = new QuerySet();
 $result = $set->result();
 ```
 
-Or the node items use `items()`.
+The result object contains enough information to be used in a template,
+for instance showing the total count, used filters and listing items.
+
+
+### Accessing items explicitly
+
+The query-set acts as an iterator but if you need the item list
+directly call `items()`:
 
 ```
 <?php
@@ -141,6 +216,7 @@ foreach ($set->items() as $node) {
 }
 ```
 
+### Control visibilty
 
 Turn off default visibilty rules:
 
@@ -172,6 +248,8 @@ foreach ($set as $node) {
 }
 ```
 
+### Limit to main nodes
+
 Limit result to only main nodes:
 
 ```
@@ -188,6 +266,8 @@ foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
 ```
+
+### Control roles/policies
 
 Turn off all role-based policies:
 
