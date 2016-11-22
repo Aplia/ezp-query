@@ -20,6 +20,7 @@ class QuerySet implements \IteratorAggregate
     public $parentNodeId;
     public $classes = array();
     public $depth = null;
+    public $depthOperator = 'le';
     public $paginate = false;
     public $pageNumber = null;
     public $pageParams = null;
@@ -106,6 +107,21 @@ class QuerySet implements \IteratorAggregate
         }
         $this->useRoles = Arr::get($params, 'useRoles', $useRoles);
         $this->depth = Arr::get($params, 'depth', null);
+        $depthOperator = Arr::get($params, 'depthOperator', 'le');
+        $this->depthOperatorNames = array(
+            '<' => 'lt',
+            '>' => 'gt',
+            '<=' => 'le',
+            '>=' => 'ge',
+            '=' => 'eq',
+        );
+        if (isset($depthOperatorNames[$depthOperator])) {
+            $depthOperator = $depthOperatorNames[$depthOperator];
+        }
+        if (!in_array($this->depthOperator, array('le', 'ge', 'lt', 'gt', 'eq'))) {
+            throw new \Exception("Depth operator not supported: " . Arr::get($params, 'depthOperator', 'le'));
+        }
+        $this->depthOperator = $depthOperator;
         $this->paginate = Arr::get($params, 'paginate', false);
         $this->pageNumber = Arr::get($params, 'pageNumber');
         if (isset($params['sortChoices'])) {
@@ -167,14 +183,32 @@ class QuerySet implements \IteratorAggregate
 
     /**
     * Sets the query depth.
+    * If $operator is set it will also limit the depth using this operator.
+    *
+    * Supported depth operators are:
+    * >,  gt
+    * <,  lt
+    * >=, ge
+    * <=, le
+    * =,  eq
     *
     * @param $value The depth of the query, false to fetch entire tree.
+    * @param $operator Operator for depth filter.
     * @return Aplia\Content\Query\QuerySet
     */
-    public function depth($value)
+    public function depth($value, $operator = null)
     {
         $clone = $this->makeClone(true);
         $clone->depth = $value;
+        if ($operator !== null) {
+            if (isset($depthOperatorNames[$depthOperator])) {
+                $operator = $depthOperatorNames[$operator];
+            }
+            if (!in_array($this->depthOperator, array('le', 'ge', 'lt', 'gt', 'eq'))) {
+                throw new \Exception("Depth operator not supported: " . $operator);
+            }
+            $this->depthOperator = $operator;
+        }
         return $clone;
     }
 
@@ -640,6 +674,7 @@ class QuerySet implements \IteratorAggregate
             'MainNodeOnly' => $this->mainNodeOnly,
             'Limitation' => $this->useRoles ? null : $this->policies,
             'Depth' => $this->depth,
+            'DepthOperator' => $this->depthOperator,
          ), $parentNodeId);
         return $totalCount;
     }
@@ -687,6 +722,7 @@ class QuerySet implements \IteratorAggregate
                     'MainNodeOnly' => $this->mainNodeOnly,
                     'Limitation' => $this->useRoles ? null : $this->policies,
                     'Depth' => $this->depth,
+                    'DepthOperator' => $this->depthOperator,
                  ), $parentNodeId);
                 $this->_totalCount = $totalCount;
             } else {
@@ -734,6 +770,7 @@ class QuerySet implements \IteratorAggregate
             'AsObject' => $asObject,
             'Limitation' => $this->useRoles ? null : $this->policies,
             'Depth' => $this->depth,
+            'DepthOperator' => $this->depthOperator,
             'Offset' => $page ? $page->offset : 0,
             'Limit' => $page ? $page->size : $this->getDefaultPageLimit(),
             'SortBy' => ($sortOrder && $sortOrder->sortArray) ? $sortOrder->sortArray : null,
