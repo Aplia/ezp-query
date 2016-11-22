@@ -95,8 +95,16 @@ class QuerySet implements \IteratorAggregate
         $this->objectFilters = Arr::get($params, 'objectFilterValues', array());
         $this->useVisibility = Arr::get($params, 'useVisibility', true);
         $this->mainNodeOnly = Arr::get($params, 'mainNodeOnly', false);
-        $this->useRoles = Arr::get($params, 'useRoles', true);
-        $this->policies = Arr::get($params, 'policies', array());
+        $useRoles = true;
+        $policies = Arr::get($params, 'policies', null);
+        if ($policies !== null) {
+            if (!is_array($policies)) {
+                throw new \Exception("Parameter must be an array of policies: \$policies");
+            }
+            $this->policies = $policies;
+            $useRoles = false;
+        }
+        $this->useRoles = Arr::get($params, 'useRoles', $useRoles);
         $this->depth = Arr::get($params, 'depth', null);
         $this->paginate = Arr::get($params, 'paginate', false);
         $this->pageNumber = Arr::get($params, 'pageNumber');
