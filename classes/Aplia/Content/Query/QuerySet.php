@@ -39,6 +39,31 @@ class QuerySet implements \IteratorAggregate
     public $filters = array();
     public $objectFilters = array();
     /**
+     * Whether to only use the default visibility rules, if true it will filter
+     * out any invisible nodes.
+     * Default is true.
+     */
+    public $useVisibility = true;
+    /**
+     * Whether to only include main nodes in the result.
+     *
+     * Default is false.
+     */
+    public $mainNodeOnly = false;
+    /**
+     * Whether to only use policiy rules from the database role setup or
+     * to use policies from the query-set. True means to use the database
+     * roles while false means to use query-set policies.
+     *
+     * Default is true.
+     */
+    public $useRoles = true;
+    /**
+     * Array of role policies to send to the queries, this will only be
+     * used if $useRoles is false.
+     */
+    public $policies = array();
+    /**
     * The query variables, defaults to $_GET.
     */
     public $query = array();
@@ -68,6 +93,10 @@ class QuerySet implements \IteratorAggregate
         $this->filterMode = Arr::get($params, 'filterMode', 'attribute');
         $this->filters = Arr::get($params, 'filterValues', array());
         $this->objectFilters = Arr::get($params, 'objectFilterValues', array());
+        $this->useVisibility = Arr::get($params, 'useVisibility', true);
+        $this->mainNodeOnly = Arr::get($params, 'mainNodeOnly', false);
+        $this->useRoles = Arr::get($params, 'useRoles', true);
+        $this->policies = Arr::get($params, 'policies', array());
         $this->depth = Arr::get($params, 'depth', null);
         $this->paginate = Arr::get($params, 'paginate', false);
         $this->pageNumber = Arr::get($params, 'pageNumber');
@@ -182,16 +211,90 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
+    * Controls whether result list contains only main nodes or
+    * all nodes. The default is to include all nodes.
+    *
+    * Only include main nodes:
+    * @code
+    * onlyMainNodes(true)
+    * @endcode
+    *
+    * @param $enabled True to only include main nodes, false to include all.
+    * @return Aplia\Content\Query\QuerySet
+    */
+    public function onlyMainNodes($enabled=true)
+    {
+        $clone = $this->makeClone(true);
+        $clone->mainNodeOnly = $enabled;
+        return $clone;
+    }
+
+    /**
+    * Controls whether default visibility filters are used or not.
+    *
+    * Turning off default visibility filters:
+    * @code
+    * visibility(false)
+    * @endcode
+    *
+    * @param $enabled True to turn on visibility filters, or false to turn off.
+    * @return Aplia\Content\Query\QuerySet
+    */
+    public function visibility($enabled)
+    {
+        $clone = $this->makeClone(true);
+        $clone->useVisibility = $enabled;
+        return $clone;
+    }
+
+    /**
+    * Controls whether policies are taken from the database roles
+    * or from a custom list supplied to the query-set.
+    *
+    * Calling it without parameters (or true) will enable default roles:
+    * @code
+    * policies()
+    * @endcode
+    *
+    * Calling it with false will disable all policies.
+    * @code
+    * policies(false)
+    * @endcode
+    *
+    * Calling it with an array will disable role policies and set
+    * a new set of policies.
+    * @code
+    * policies(array())
+    * @endcode
+    *
+    * @param $policies Array of policies to set, or boolean to enable/disable.
+    * @return Aplia\Content\Query\QuerySet
+    */
+    public function policies($policies=true)
+    {
+        $clone = $this->makeClone(true);
+        if ($policies === true) {
+            $clone->useRoles = true;
+        } elseif ($policies === false) {
+            $clone->useRoles = false;
+        } elseif (is_array($policies)) {
+            $clone->policies = $policies;
+            $clone->useRoles = false;
+        }
+        return $clone;
+    }
+
+    /**
     * Executes the query and returns the result object.
     * The result object is cached so calling this method multiple
     * times is efficient.
     *
     * @return Aplia\Content\Query\Result
     */
-    public function result()
+    public function result($asObject=true)
     {
         if ($this->_result === null) {
-            $this->_result = $this->createResult();
+            $this->_result = $this->createResult($asObject);
         }
         return $this->_result;
     }
@@ -203,10 +306,10 @@ class QuerySet implements \IteratorAggregate
     *
     * @return array
     */
-    public function items()
+    public function items($asObject=true)
     {
         if ($this->_result === null) {
-            $this->_result = $this->createResult();
+            $this->_result = $this->createResult($asObject);
         }
         return $this->_result->items;
     }
@@ -525,6 +628,9 @@ class QuerySet implements \IteratorAggregate
             'ClassFilterArray' => $contentFilter->classes,
             'AttributeFilter' => $attributeFilter,
             'ExtendedAttributeFilter' => $extendedFilter,
+            'IgnoreVisibility' => !$this->useVisibility,
+            'MainNodeOnly' => $this->mainNodeOnly,
+            'Limitation' => $this->useRoles ? null : $this->policies,
             'Depth' => $this->depth,
          ), $parentNodeId);
         return $totalCount;
@@ -536,7 +642,7 @@ class QuerySet implements \IteratorAggregate
     *
     * @return Aplia\Content\Query\Result
     */
-    protected function createResult()
+    protected function createResult($asObject=true)
     {
         if ($this->_isDirty) {
             $this->result = null;
@@ -569,6 +675,9 @@ class QuerySet implements \IteratorAggregate
                     'ClassFilterArray' => $contentFilter->classes,
                     'AttributeFilter' => $attributeFilter,
                     'ExtendedAttributeFilter' => $extendedFilter,
+                    'IgnoreVisibility' => !$this->useVisibility,
+                    'MainNodeOnly' => $this->mainNodeOnly,
+                    'Limitation' => $this->useRoles ? null : $this->policies,
                     'Depth' => $this->depth,
                  ), $parentNodeId);
                 $this->_totalCount = $totalCount;
@@ -612,6 +721,10 @@ class QuerySet implements \IteratorAggregate
             'ClassFilterArray' => $contentFilter->classes,
             'AttributeFilter' => $attributeFilter,
             'ExtendedAttributeFilter' => $extendedFilter,
+            'IgnoreVisibility' => !$this->useVisibility,
+            'MainNodeOnly' => $this->mainNodeOnly,
+            'AsObject' => $asObject,
+            'Limitation' => $this->useRoles ? null : $this->policies,
             'Depth' => $this->depth,
             'Offset' => $page ? $page->offset : 0,
             'Limit' => $page ? $page->size : $this->getDefaultPageLimit(),
@@ -720,7 +833,14 @@ class QuerySet implements \IteratorAggregate
     {
         if (isset($this->filterTypes[$name])) {
             $this->filters[$name] = $value;
-        } elseif ($name == 'path' || $name == 'section' || $name == 'state' || $name == 'depth' || $name == 'class_identifier' || $name == 'class_name' || $name == 'priority' || $name == 'name' || $name == 'visibility') {
+        } elseif ($name == 'visible' || $name == 'visibility') {
+            $this->useVisibility = false;
+            if ($name == 'visible') {
+                $this->objectFilters[] = array('visibility', $value);
+            } else {
+                $this->objectFilters[] = array($name, $value);
+            }
+        } elseif ($name == 'path' || $name == 'section' || $name == 'state' || $name == 'depth' || $name == 'class_identifier' || $name == 'class_name' || $name == 'priority' || $name == 'name') {
             $this->objectFilters[] = array($name, $value);
         } elseif ($name == 'published' || $name == 'modified' || $name == 'modified_subnode') {
             if ($value instanceof \DateTime) {
