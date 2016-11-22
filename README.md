@@ -99,6 +99,91 @@ foreach ($set as $node) {
 
 To explicitly get the result object (e.g. for templates) use `result()`.
 
+
+Turn off default visibilty rules:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->visibilty(false);
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+// or
+$set = new QuerySet(array('useVisibility' => false));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+
+```
+
+Only list hidden items (this turns off default rules):
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->filter('visible', false);
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+Limit result to only main nodes:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->onlyMainNodes();
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+// or
+$set = new QuerySet(array('mainNodeOnly' => true));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+Turn off all role-based policies:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->policies(false);
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+// or
+$set = new QuerySet(array('useRoles' => false));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+Filter based on a custom policy array:
+
+```
+<?php
+$policies = array(/*...*/);
+$set = new QuerySet();
+$set = $set
+  ->policies($policies);
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+// or
+$policies = array(/*...*/);
+$set = new QuerySet(array('policies' => $policies));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+
 ## Pagination
 
 `BaseNumPagination` defines the main interface for all pagination concrete classes.
