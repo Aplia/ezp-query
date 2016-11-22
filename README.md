@@ -35,6 +35,11 @@ $set = $set->classes('article');
 foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
+// or
+$set = new QuerySet(array('classes' => array('article')));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
 ```
 
 List entire tree of a given node (node id 42):
@@ -43,6 +48,27 @@ List entire tree of a given node (node id 42):
 <?php
 $set = new QuerySet();
 $set = $set->depth(false)->parentNode(42);
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+// or
+$set = new QuerySet(array('depth' => false, 'parentNodeId' => 42));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+List a specific depth using an operator:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set->depth(2, '>=');
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+// or
+$set = new QuerySet(array('depth' => false, 'depthOperator' => '>='));
 foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
@@ -98,6 +124,22 @@ foreach ($set as $node) {
 ```
 
 To explicitly get the result object (e.g. for templates) use `result()`.
+
+```
+<?php
+$set = new QuerySet();
+$result = $set->result();
+```
+
+Or the node items use `items()`.
+
+```
+<?php
+$set = new QuerySet();
+foreach ($set->items() as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
 
 
 Turn off default visibilty rules:
