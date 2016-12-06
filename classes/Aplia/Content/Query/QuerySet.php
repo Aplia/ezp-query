@@ -1132,7 +1132,7 @@ class QuerySet implements \IteratorAggregate
         return $this->$key;
     }
 
-    public function attributes($key)
+    public function attributes()
     {
         return array_merge(array_keys( get_object_vars($this) ), array('result'));
     }
