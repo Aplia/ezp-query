@@ -36,7 +36,13 @@ class QuerySet implements \IteratorAggregate
     * - property - Read sort value from a property on the query-set.
     */
     public $sortMode = 'property';
-    public $filterMode = 'attribute';
+    /**
+     * How filters are interpreted, the default is 'nested'.
+     *
+     * - attribute - Sent as regular attribute filters.
+     * - nested - Uses an extended attribute filter with the filters as the parameter.
+     */
+    public $filterMode = 'nested';
     public $filters = array();
     public $objectFilters = array();
     /**
@@ -91,7 +97,7 @@ class QuerySet implements \IteratorAggregate
         $this->sortQueryName = Arr::get($params, 'sortQueryName', 'sort');
         $this->defaultSortOrder = Arr::get($params, 'defaultSortOrder', 'newest');
         $this->defaultPageLimit = Arr::get($params, 'defaultPageLimit');
-        $this->filterMode = Arr::get($params, 'filterMode', 'attribute');
+        $this->filterMode = Arr::get($params, 'filterMode', 'nested');
         $this->filters = Arr::get($params, 'filterValues', array());
         $this->objectFilters = Arr::get($params, 'objectFilterValues', array());
         $this->useVisibility = Arr::get($params, 'useVisibility', true);
