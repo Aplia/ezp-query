@@ -1121,12 +1121,12 @@ class QuerySet implements \IteratorAggregate
     // eZ template access
     public function hasAttribute($key)
     {
-        return isset($this->$key) || in_array($key, array('result'));
+        return isset($this->$key) || in_array($key, array('result', 'count', 'items', 'iterator'));
     }
 
     public function attribute($key)
     {
-        if (in_array($key, array('result'))) {
+        if (in_array($key, array('result', 'count', 'items', 'iterator'))) {
             return $this->$key();
         }
         return $this->$key;
@@ -1134,6 +1134,6 @@ class QuerySet implements \IteratorAggregate
 
     public function attributes()
     {
-        return array_merge(array_keys( get_object_vars($this) ), array('result'));
+        return array_merge(array_keys( get_object_vars($this) ), array('result', 'count', 'items', 'iterator'));
     }
 }
