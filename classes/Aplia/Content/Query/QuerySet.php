@@ -175,6 +175,18 @@ class QuerySet implements \IteratorAggregate
             'newest' => function ($id, $order) { return array(array('published', 0)); },
             'a-z' => function ($id, $order) { return array(array('name', 1)); },
             'z-a' => function ($id, $order) { return array(array('name', 0)); },
+            'published' => function ($id, $order) { return array(array('published', $order)); },
+            'path' => function ($id, $order) { return array(array('path', $order)); },
+            'modified' => function ($id, $order) { return array(array('modified', $order)); },
+            'section' => function ($id, $order) { return array(array('section', $order)); },
+            'depth' => function ($id, $order) { return array(array('depth', $order)); },
+            'class_identifier' => function ($id, $order) { return array(array('class_identifier', $order)); },
+            'class_name' => function ($id, $order) { return array(array('class_name', $order)); },
+            'priority' => function ($id, $order) { return array(array('priority', $order)); },
+            'name' => function ($id, $order) { return array(array('name', $order)); },
+            'modified_subnode' => function ($id, $order) { return array(array('modified_subnode', $order)); },
+            'node_id' => function ($id, $order) { return array(array('node_id', $order)); },
+            'content_object_id' => function ($id, $order) { return array(array('content_object_id', $order)); },
         );
     }
 
