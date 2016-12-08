@@ -130,4 +130,32 @@ class ContentHelper
             throw new TypeError("The node type is supported: " . is_object($node) ? get_class($node) : gettype($node));
         }
     }
+
+    /**
+    * Get a content node from a content node, content object or numeric.
+    *
+    * @throws TypeError if the type or class is not supported.
+    * @return eZContentObjectTreeNode
+    */
+    public static function getNode($node)
+    {
+        if ($node === null) {
+            return null;
+        }
+
+        if ($node instanceof \eZContentObjectTreeNode) {
+            return $node;
+        } else if ($node instanceof \eZContentObject) {
+            return $node->attribute('main_node');
+        } else if (is_numeric($node)) {
+            $nodeId = $node;
+            $node = \eZContentObjectTreeNode::fetch($nodeId);
+            if (!$node) {
+                throw new TypeError("The node does not exist: $nodeId");
+            }
+            return $node;
+        } else {
+            throw new TypeError("The node type is supported: " . is_object($node) ? get_class($node) : gettype($node));
+        }
+    }
 }
