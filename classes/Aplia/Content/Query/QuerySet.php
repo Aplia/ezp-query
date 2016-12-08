@@ -33,6 +33,7 @@ class QuerySet implements \IteratorAggregate
     * Default is to sort by property.
     *
     * - query - Read sort value from a query parameter.
+    * - array - Classic eZ publish sort array
     * - property - Read sort value from a property on the query-set.
     */
     public $sortMode = 'property';
@@ -77,6 +78,7 @@ class QuerySet implements \IteratorAggregate
 
     public $sortOrder;
     public $sortField;
+    public $sortArray;
     public $pageLimit;
     public $filterTypes = array();
     public $useClone = false;
@@ -468,6 +470,20 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
+    * Changes sort order to a sort array as used by eZ publish.
+    *
+    * @param $sortArray The array with sort items.
+    * @return Aplia\Content\Query\QuerySet
+    */
+    public function sortByArray(array $sortArray)
+    {
+        $clone = $this->makeClone(true);
+        $clone->sortMode = 'array';
+        $clone->setSortByArray($sortArray);
+        return $clone;
+    }
+
+    /**
     * Changes sort order based on a query parameter.
     *
     * @param $queryName The name of the query or null to use the name defined in constructor.
@@ -612,6 +628,14 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
+    * Sets the current array sort.
+    */
+    protected function setSortByArray(array $sortArray=null)
+    {
+        $this->sortArray = $sortArray;
+    }
+
+    /**
     * Sets the current query name to use for sort field.
     */
     protected function setSortByQuery($queryName=null)
@@ -753,6 +777,8 @@ class QuerySet implements \IteratorAggregate
                 // Use default sort
                 $sortOrder->resolveQuery();
             }
+        } elseif ($this->sortMode === 'array') {
+            $sortOrder->resolveArray($this->sortArray);
         } else if ($this->sortMode === 'query') {
             if ($this->sortQueryName !== null) {
                 $query = $this->query;

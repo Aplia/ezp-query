@@ -68,4 +68,9 @@ class SortOrder
             $this->sortArray = $result['array'];
         }
     }
+
+    public function resolveArray(array $array=null)
+    {
+        $this->sortArray = $array;
+    }
 }
