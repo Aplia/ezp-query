@@ -145,6 +145,30 @@ foreach ($set as $node) {
 }
 ```
 
+Creating a new sort field and sorting on that:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set->sortChoices(array('age' => 'created'))->sortByField('-age');
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+Use a regular sort array:
+
+```
+<?php
+$set = new QuerySet();
+$set = $set->sortByArray(array(
+    array('published', 1),
+));
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
 ### Paginate results
 
 Use pagination and fetch specific page:

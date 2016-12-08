@@ -2,6 +2,33 @@
 
 Changelog for the `contentquery` package.
 
+## 1.6.0
+- New static method `ContentHelper::getNode` for fetching a content node based on input value.
+  Can fetch node from content node, content object or numeric ID.
+- Support for sort arrays in `QuerySet`, use `sortByArray`.
+- Added more default sort fields, taken from the supported fields by eZ publish.
+
+## 1.5.1
+- Support additional attribute entries. This makes the attributes
+  `count`, `items` and `iterator` available to templates.
+
+## 1.5.0
+- Filter mode now defaults to 'nested'
+
+## 1.4.1
+- Default visibility rules can now be turned on/off with `visibility()`.
+  Also setting a filter on `visibility`/`visible` will turn off default
+  visibility rules.
+- Result list can be limited to main node only with `onlyMainNodes()`
+- Default policies based on database roles can be turned on/off with
+  `policies()`. Using a boolean with turn on/off the defaults.
+  Using an array will turn off roles and use a custom policy list.
+- `result()` and `items()` can now return nodes as value arrays instead of
+  objects by setting `$asObject`.
+
+## 1.4.0
+- New package name `aplia/query`
+
 ## 1.3.0
 - New method `loadFilters` for adding filters from the content class attributes.
 
