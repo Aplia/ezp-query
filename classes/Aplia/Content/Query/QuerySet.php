@@ -45,6 +45,7 @@ class QuerySet implements \IteratorAggregate
      */
     public $filterMode = 'nested';
     public $filters = array();
+    public $customFilters = array();
     public $objectFilters = array();
     /**
      * Whether to only use the default visibility rules, if true it will filter
@@ -101,6 +102,7 @@ class QuerySet implements \IteratorAggregate
         $this->defaultPageLimit = Arr::get($params, 'defaultPageLimit');
         $this->filterMode = Arr::get($params, 'filterMode', 'nested');
         $this->filters = Arr::get($params, 'filterValues', array());
+        $this->customFilters = Arr::get($params, 'customFilters', array());
         $this->objectFilters = Arr::get($params, 'objectFilterValues', array());
         $this->useVisibility = Arr::get($params, 'useVisibility', true);
         $this->mainNodeOnly = Arr::get($params, 'mainNodeOnly', false);
@@ -455,6 +457,25 @@ class QuerySet implements \IteratorAggregate
         } else {
             $clone->setFilter($name, $value);
         }
+        return $clone;
+    }
+
+    /**
+    * Adds a custom nested filter to the filter list. These
+    * filters will be passed directly to the NestedFilter
+    * system (Extended attribute filter).
+    * Calling this multiple times will append each filter
+    * to a list of filters which will be ANDed together.
+    *
+    * @param $filter Array containing the filters to add.
+    */
+    public function addFilter($filter)
+    {
+        if ($this->filterMode !== 'nested') {
+            throw new QueryError("Can only used custom filters when the mode is nested, current mode: " . $this->filterMode);
+        }
+        $clone = $this->makeClone(true);
+        $clone->addCustomFilter($filter);
         return $clone;
     }
 
@@ -911,6 +932,11 @@ class QuerySet implements \IteratorAggregate
             ));
         }
         $contentFilter->setFilters($filterTypes, $this->filterMode);
+        if ($this->customFilters) {
+            $contentFilter->merge(array(
+                'nested' => $this->customFilters,
+            ));
+        }
 
         return $contentFilter;
     }
@@ -990,6 +1016,14 @@ class QuerySet implements \IteratorAggregate
                 $this->filters[$name] = $value;
             }
         }
+    }
+
+    /**
+    * Adds the custom filter $filter.
+    */
+    protected function addCustomFilter($filter)
+    {
+        $this->customFilters[] = $filter;
     }
 
     /**
@@ -1104,10 +1138,10 @@ class QuerySet implements \IteratorAggregate
                 'operator' => $operator
             );
             if ($pre) {
-                $filterParams['fieldLookups'] = $pre;
+                $filterParams['fieldModifiers'] = $pre;
             }
             if ($post) {
-                $filterParams['valueLookups'] = $post;
+                $filterParams['valueModifiers'] = $post;
             }
             if ($type == 'int') {
                 $filter = new IntegerFieldFilter($filterParams);

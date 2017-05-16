@@ -2,6 +2,14 @@
 
 Changelog for the `contentquery` package.
 
+## 1.7.0
+- Support for modifiers on FieldFilter classes, pass the `fieldModifiers` and `valueModifiers`
+  parameters.
+- Support for modifiers on the attribute filter string, e.g. `'company/name:first_letter='`,
+  these are passed to the FieldFilter classes.
+- Support for nested filter structures on QuerySet objects by calling `addFilter`.
+  The filters are passed directly to the NestedFilter system.
+
 ## 1.6.0
 - New static method `ContentHelper::getNode` for fetching a content node based on input value.
   Can fetch node from content node, content object or numeric ID.
