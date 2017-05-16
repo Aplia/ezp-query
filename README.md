@@ -197,6 +197,30 @@ foreach ($set as $node) {
 }
 ```
 
+Filters may also define modifiers on the field or value by
+using the advanced syntax from NestedFilter.
+
+e.g. to use a modifier called `first_letter` change the
+attribute name to include a `colon` and then the modifier
+followed by another `colon` and the operator. The modifier
+must first be defined in `filter.ini` and point to a valid
+static method, see `aplia/query` package for more details
+on modifiers.
+
+Example which finds all articles that starts with `M`
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->defineFilter('title', 'string', 'article/title:first_letter:=')
+  ->filter('title', 'M');
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+
 ### Define filters from database
 
 Load filters from the content class:
@@ -208,6 +232,34 @@ $set = $set
   ->classes('article')
   ->loadFilters()
   ->filter('article/title', 'My title');
+foreach ($set as $node) {
+    echo $node->attribute('name'), "\n";
+}
+```
+
+
+### Custom nested filters
+
+If the default filter system is too limiting then the
+custom filters may be used instead. They are nested
+filters which are passed to the NestedFilter system
+(`aplia/query` package) which supports arbitrary
+nesting of AND/OR structures with filters.
+
+Call the `addFilter` method on the query set and
+pass the filters you want. Calling it multiple times
+will AND the filters together.
+
+Custom filters can be used together with normal filters.
+
+```
+<?php
+$set = new QuerySet();
+$set = $set
+  ->classes('article')
+  ->addFilter(
+  array('article/title', 'My title', '=')
+)
 foreach ($set as $node) {
     echo $node->attribute('name'), "\n";
 }
