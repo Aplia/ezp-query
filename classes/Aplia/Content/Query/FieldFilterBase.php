@@ -6,6 +6,8 @@ abstract class FieldFilterBase
     public $selected = array();
     public $allowInput = true;
     public $operator = '=';
+    public $fieldModifiers;
+    public $valueModifiers;
     public $contentAttribute;
     //$items;
     //$selectedItems;
@@ -17,6 +19,8 @@ abstract class FieldFilterBase
     {
         $this->allowInput = isset($params['allowInput']) ? $params['allowInput'] : true;
         $this->operator = isset($params['operator']) ? $params['operator'] : '=';
+        $this->fieldModifiers = isset($params['fieldModifiers']) ? $params['fieldModifiers'] : null;
+        $this->valueModifiers = isset($params['valueModifiers']) ? $params['valueModifiers'] : null;
         $this->contentAttribute = isset($params['contentAttribute']) ? $params['contentAttribute'] : null;
     }
 
@@ -99,16 +103,23 @@ abstract class FieldFilterBase
     public function getContentFilter($mode='attribute')
     {
         if ($this->contentAttribute && $this->hasSelected()) {
+            $lookups = array();
+            if ($this->fieldModifiers) {
+                $lookups['pre'] = $this->fieldModifiers;
+            }
+            if ($this->valueModifiers) {
+                $lookups['post'] = $this->valueModifiers;
+            }
             if ($mode == 'attribute') {
                 return array('attribute' =>
                     array(
-                        array($this->contentAttribute, $this->operator, $this->selected),
+                        array($this->contentAttribute, $this->operator, $this->selected, $lookups ? $lookups : null),
                     ),
                 );
             } elseif ($mode == 'nested') {
                 return array('nested' =>
                     array(
-                        array($this->contentAttribute, $this->selected, $this->operator),
+                        array($this->contentAttribute, $this->selected, $this->operator, $lookups ? $lookups : null),
                     ),
                 );
             }
