@@ -1077,14 +1077,38 @@ class QuerySet implements \IteratorAggregate
         }
         if (!is_object($type)) {
             $operator = '=';
-            if (preg_match("/^(.+):(.+)$/", $attributeIdentifier, $matches)) {
-                $attributeIdentifier = $matches[1];
-                $operator = $matches[2];
+            $pre = array();
+            $post = array();
+            if (preg_match("|^([^:]+)((:([^:]+))+)?$|", $attributeIdentifier, $matches)) {
+                if (isset($matches[2])) {
+                    $ops = explode(":", substr($matches[2], 1));
+                    $attributeIdentifier = $matches[1];
+                    $inPre = true;
+                    foreach ($ops as $modifier) {
+                        if (in_array($modifier, \Aplia\Content\Filter\NestedFilter::$ops)) {
+                            $operator = $modifier;
+                            $inPre = false;
+                        } else if ($inPre) {
+                            $pre[] = $modifier;
+                        } else {
+                            $post[] = $modifier;
+                        }
+                    }
+                    if (!strlen($operator)) {
+                        $operator = '=';
+                    }
+                }
             }
             $filterParams = array(
                 'contentAttribute' => $attributeIdentifier,
                 'operator' => $operator
-             );
+            );
+            if ($pre) {
+                $filterParams['fieldLookups'] = $pre;
+            }
+            if ($post) {
+                $filterParams['valueLookups'] = $post;
+            }
             if ($type == 'int') {
                 $filter = new IntegerFieldFilter($filterParams);
             } elseif ($type == 'bool') {
