@@ -1,5 +1,8 @@
 <?php
 namespace Aplia\Content\Query;
+use Exception;
+use Aplia\Content\Exceptions\TypeError;
+use Aplia\Content\Exceptions\QueryError;
 
 /**
 * Helper class to aid in converting FieldFilter classes into content class attribute and extended filters.
@@ -63,7 +66,45 @@ class ContentFilter
             if ($this->nestedAttributes === null) {
                 $this->nestedAttributes = array();
             }
-            $this->nestedAttributes = array_merge( $this->nestedAttributes, $items['nested'] );
+            $this->processNested($this->nestedAttributes, $items['nested']);
+        }
+    }
+
+    /**
+     * Processes filter lists in a nested/recursive manner,
+     * it turns any objects into proper array structures used by
+     * NestedFilter and adds it to $filters.
+     */
+    protected function processNested(&$filters, $nested)
+    {
+        foreach ($nested as $item) {
+            if (is_array($item)) {
+                $filters[] = $item;
+            } else if (is_object($item)) {
+                $subItems = $item->nested;
+                if (!$subItems) {
+                    continue;
+                }
+                $subFilters = array();
+                $this->processNested($subFilters, $subItems);
+                if (!$subFilters) {
+                    continue;
+                }
+                $condition = $item->condition;
+                if (!in_array($condition, array('and', 'or', 'merge'))) {
+                    throw new QueryError("Unknown filter condition '$condition'");
+                }
+                if ($condition === 'merge') {
+                    $filters = array_merge($filters, $subFilters);
+                } else {
+                    $filters[] = array(
+                        'cond' => $condition,
+                        'attrs' => $subFilters,
+                    );
+                }
+            } else {
+                throw new TypeError("Unsupported filter type: " . var_export($item, true));
+            }
         }
     }
 

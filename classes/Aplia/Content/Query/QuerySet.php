@@ -6,19 +6,15 @@ use Aplia\Content\Query\ContentFilter;
 use Aplia\Content\Query\Result;
 use Aplia\Content\Query\FieldFilterBase;
 use Aplia\Content\Query\FilterValues;
-use Aplia\Content\Query\IntegerFieldFilter;
-use Aplia\Content\Query\BoolFieldFilter;
-use Aplia\Content\Query\StringFieldFilter;
-use Aplia\Content\Exceptions\FilterTypeError;
+use Aplia\Content\Query\QueryFilterBase;
 use Aplia\Content\Exceptions\QueryError;
 use Aplia\Support\Arr;
 
-class QuerySet implements \IteratorAggregate
+class QuerySet extends QueryFilterBase implements \IteratorAggregate
 {
     const DEFAULT_PAGE_LIMIT = 10;
 
     public $parentNodeId;
-    public $classes = array();
     public $depth = null;
     public $depthOperator = 'le';
     public $paginate = false;
@@ -44,9 +40,6 @@ class QuerySet implements \IteratorAggregate
      * - nested - Uses an extended attribute filter with the filters as the parameter.
      */
     public $filterMode = 'nested';
-    public $filters = array();
-    public $customFilters = array();
-    public $objectFilters = array();
     /**
      * Whether to only use the default visibility rules, if true it will filter
      * out any invisible nodes.
@@ -81,29 +74,23 @@ class QuerySet implements \IteratorAggregate
     public $sortField;
     public $sortArray;
     public $pageLimit;
-    public $filterTypes = array();
-    public $useClone = false;
 
     // Caches
     protected $_totalCount;
     protected $_contentFilter;
 
     protected $_result;
-    protected $_isDirty = false;
 
     public function __construct(array $params=null)
     {
+        parent::__construct($params);
         $this->parentNodeId = Arr::get($params, 'parentNodeId');
-        $this->classes = Arr::get($params, 'classes', array());
         $this->limitSetting = Arr::get($params, 'limitSetting', array());
         $this->query = Arr::get($params, 'query', $_GET);
         $this->sortQueryName = Arr::get($params, 'sortQueryName', 'sort');
         $this->defaultSortOrder = Arr::get($params, 'defaultSortOrder', 'newest');
         $this->defaultPageLimit = Arr::get($params, 'defaultPageLimit');
         $this->filterMode = Arr::get($params, 'filterMode', 'nested');
-        $this->filters = Arr::get($params, 'filterValues', array());
-        $this->customFilters = Arr::get($params, 'customFilters', array());
-        $this->objectFilters = Arr::get($params, 'objectFilterValues', array());
         $this->useVisibility = Arr::get($params, 'useVisibility', true);
         $this->mainNodeOnly = Arr::get($params, 'mainNodeOnly', false);
         $useRoles = true;
@@ -143,23 +130,6 @@ class QuerySet implements \IteratorAggregate
         $this->sortChoiceNames = Arr::get($params, 'sortChoiceNames');
 
         $this->sortOrder = Arr::get($params, 'sortOrder');
-        $filterTypes = Arr::get($params, 'filters', null);
-        if ($filterTypes) {
-            foreach ($filterTypes as $name => $filterType) {
-                if ($filterType instanceof FieldFilterBase) {
-                    $this->addDefinedFilter($name, $filterType);
-                } elseif (is_array($filterType)) {
-                    if (isset($filterType['type'])) {
-                        $this->addDefinedFilter($name, $filterType['type'], Arr::get($filterType, 'attribute'));
-                    } else {
-                        $this->addDefinedFilter($name, $filterType[0], isset($filterType[1]) ? $filterType[1] : null);
-                    }
-                } else {
-                    $this->addDefinedFilter($name, $filterType);
-                }
-            }
-        }
-        $this->useClone = Arr::get($params, 'useClone', false);
         $this->paginatorClass = Arr::get($params, 'paginatorClass', 'Aplia\\Content\\Query\\PageNumPagination');
         $this->filterClass = Arr::get($params, 'filterClass', 'Aplia\\Content\\Query\\ContentFilter');
         $this->sortOrderClass = Arr::get($params, 'sortOrderClass', 'Aplia\\Content\\Query\\SortOrder');
@@ -190,17 +160,6 @@ class QuerySet implements \IteratorAggregate
             'node_id' => function ($id, $order) { return array(array('node_id', $order)); },
             'content_object_id' => function ($id, $order) { return array(array('content_object_id', $order)); },
         );
-    }
-
-    /**
-    * Creates a copy of the query set and returns it.
-    *
-    * @return Aplia\Content\Query\QuerySet
-    */
-    public function copy()
-    {
-        $set = clone $this;
-        return $set;
     }
 
     /**
@@ -395,88 +354,14 @@ class QuerySet implements \IteratorAggregate
     }
 
     /**
-    * Defines a new field filter.
-    * If $type is a string it can contain one of these types:
-    * - 'int' - Integer field
-    * - 'bool' - Boolean field
-    * - 'string' - String field
-    *
-    * @param $name Name of the filter to be used when setting the filter value later on.
-    * @param $type The type of filter, either a string or an instance of FieldFilterBase.
-    * @param $attributeIdentifier The identifier of the class attribute to filter on, or null to use $name.
-    * @return Aplia\Content\Query\QuerySet
-    */
-    public function defineFilter($name, $type, $attributeIdentifier=null)
-    {
-        $clone = $this->makeClone(true);
-        $clone->addDefinedFilter($name, $type, $attributeIdentifier);
-        return $clone;
-    }
-
-    /**
-     * Loads all specified content classes and adds filters for each of the
-     * attributes in them. The type of filter is based on the data-type.
-     *
-     * The handler for each data-type is taken from contentquery.ini
-     * in the group AttributeFilters and the variable Handlers.
-     * This is an associative array where the key is the data-type string
-     * and the value is the handler class to instantiate.
-     *
-     * If no handler matches it uses one of the builtin types:
-     * - ezinteger - Integer filter
-     * - ezboolean - Boolean filter
-     * All else is defined as a string filter.
-     *
-     * @param $classes if null then it uses classes defined on the query-set.
+     * @copydoc
      */
-    public function loadFilters(array $classes=null)
-    {
-        $clone = $this->makeClone(true);
-        $clone->loadClassFilters($classes);
-        return $clone;
-    }
-
-    /**
-    * Sets a single filter value with $name and $value,
-    * or multiple values by passing an array in $name.
-    * When passing multiple filters the array must associative with
-    * the keys being the name and the item the value.
-    *
-    * @param $name Name of filter to set (from defineFilter)
-    * @param $value Value of the filter
-    * @return Aplia\Content\Query\QuerySet
-    */
-    public function filter($name, $value=null)
-    {
-        $clone = $this->makeClone(true);
-        if (is_array($name)) {
-            $filters = $name;
-            foreach ($filters as $name => $value) {
-                $clone->setFilter($name, $value);
-            }
-        } else {
-            $clone->setFilter($name, $value);
-        }
-        return $clone;
-    }
-
-    /**
-    * Adds a custom nested filter to the filter list. These
-    * filters will be passed directly to the NestedFilter
-    * system (Extended attribute filter).
-    * Calling this multiple times will append each filter
-    * to a list of filters which will be ANDed together.
-    *
-    * @param $filter Array containing the filters to add.
-    */
     public function addFilter($filter)
     {
         if ($this->filterMode !== 'nested') {
             throw new QueryError("Can only used custom filters when the mode is nested, current mode: " . $this->filterMode);
         }
-        $clone = $this->makeClone(true);
-        $clone->addCustomFilter($filter);
-        return $clone;
+        return parent::addFilter($filter);
     }
 
     /**
@@ -917,11 +802,13 @@ class QuerySet implements \IteratorAggregate
         $filterValues = $this->filters;
         $objectFilters = $this->objectFilters;
 
-        if ($filterValues) {
-            FieldFilterBase::setFilterValues($filterTypes, $filterValues);
-        }
-        if ($allowUserFilter) {
-            FieldFilterBase::resolveFilters($filterTypes, $this->query);
+        if ($filterTypes) {
+            if ($filterValues) {
+                FieldFilterBase::setFilterValues($filterTypes, $filterValues);
+            }
+            if ($allowUserFilter) {
+                FieldFilterBase::resolveFilters($filterTypes, $this->query);
+            }
         }
 
         $class = $this->filterClass;
@@ -931,231 +818,11 @@ class QuerySet implements \IteratorAggregate
                 'nested' => $objectFilters,
             ));
         }
-        $contentFilter->setFilters($filterTypes, $this->filterMode);
-        if ($this->customFilters) {
-            $contentFilter->merge(array(
-                'nested' => $this->customFilters,
-            ));
+        if ($filterTypes) {
+            $contentFilter->setFilters($filterTypes, $this->filterMode);
         }
 
         return $contentFilter;
-    }
-
-    /**
-    * Sets the filter $name to value $value.
-    */
-    protected function setFilter($name, $value)
-    {
-        if (isset($this->filterTypes[$name])) {
-            $this->filters[$name] = $value;
-        } elseif ($name == 'visible' || $name == 'visibility') {
-            $this->useVisibility = false;
-            if ($name == 'visible') {
-                $this->objectFilters[] = array('visibility', $value);
-            } else {
-                $this->objectFilters[] = array($name, $value);
-            }
-        } elseif ($name == 'path' || $name == 'section' || $name == 'state' || $name == 'depth' || $name == 'class_identifier' || $name == 'class_name' || $name == 'priority' || $name == 'name') {
-            $this->objectFilters[] = array($name, $value);
-        } elseif ($name == 'published' || $name == 'modified' || $name == 'modified_subnode') {
-            if ($value instanceof \DateTime) {
-                $value = $value->getTimestamp();
-            }
-            $this->objectFilters[] = array($name, $value);
-        } elseif ($name == 'node_id') {
-            if (is_object($value)) {
-                if ($value instanceof \eZContentObjectTreeNode) {
-                    $value = $value->attribute('node_id');
-                } elseif ($value instanceof \eZContentObject) {
-                    $value = $value->attribute('main_node_id');
-                }
-            }
-            $this->objectFilters[] = array($name, $value);
-        } elseif ($name == 'contentobject_id') {
-            if (is_object($value)) {
-                if ($value instanceof \eZContentObjectTreeNode) {
-                    $value = $value->attribute('contentobject_id');
-                } elseif ($value instanceof \eZContentObject) {
-                    $value = $value->attribute('id');
-                }
-            }
-            $this->objectFilters[] = array($name, $value);
-        } elseif ($name == 'path_element') {
-            if (is_object($value)) {
-                if ($value instanceof \eZContentObjectTreeNode) {
-                    $value = $value->attribute('contentobject_id');
-                } elseif ($value instanceof \eZContentObject) {
-                    $value = $value->attribute('id');
-                }
-            }
-            $this->objectFilters[] = array($name, $value);
-        } elseif ($name == 'class_identifier') {
-            if (is_object($value)) {
-                if ($value instanceof \eZContentClass) {
-                    $value = $value->attribute('identifier');
-                } elseif ($value instanceof \eZContentObjectTreeNode || $value instanceof \eZContentObject) {
-                    $value = $value->attribute('class_identifier');
-                }
-            }
-            $this->objectFilters[] = array($name, $value);
-        } elseif ($name == 'class_name') {
-            if (is_object($value)) {
-                if ($value instanceof \eZContentClass) {
-                    $value = $value->attribute('name');
-                } elseif ($value instanceof \eZContentObjectTreeNode || $value instanceof \eZContentObject) {
-                    $value = $value->attribute('class_name');
-                }
-            }
-            $this->objectFilters[] = array($name, $value);
-        } else {
-            // Detect class/attribute strings and use them as filters
-            // If not they are placed as object filters
-            if (strpos($name, "/") === false) {
-                $this->objectFilters[] = array($name, $value);
-            } else {
-                $this->filters[$name] = $value;
-            }
-        }
-    }
-
-    /**
-    * Adds the custom filter $filter.
-    */
-    protected function addCustomFilter($filter)
-    {
-        $this->customFilters[] = $filter;
-    }
-
-    /**
-     * Loads all specified content classes and adds filters for each of the
-     * attributes in them. The type of filter is based on the data-type.
-     *
-     * The handler for each data-type is taken from contentquery.ini
-     * in the group AttributeFilters and the variable Handlers.
-     * This is an associative array where the key is the data-type string
-     * and the value is the handler class to instantiate.
-     *
-     * If no handler matches it uses one of the builtin types:
-     * - ezinteger - Integer filter
-     * - ezboolean - Boolean filter
-     * All else is defined as a string filter.
-     *
-     * @param $classes if null then it uses classes defined on the query-set.
-     */
-    protected function loadClassFilters(array $classes=null)
-    {
-        if ($classes === null) {
-            $classes = $this->classes;
-        }
-        if (!$classes) {
-            return;
-        }
-        $settings = \eZINI::instance('contentquery.ini');
-        $handlers = array();
-        if ($settings->hasVariable('AttributeFilters', 'Handlers')) {
-            $handlers = $settings->variable('AttributeFilters', 'Handlers');
-        }
-        foreach ($classes as $identifier) {
-            $contentClass = \eZContentClass::fetchByIdentifier($identifier);
-            if (!$contentClass) {
-                throw new FilterTypeError("Failed to fetch filters for class: $identifier");
-            }
-            $dataMap = $contentClass->dataMap();
-            foreach ($dataMap as $attributeIdentifier => $attribute) {
-                $filterIdentifier = "$identifier/$attributeIdentifier";
-                $typeString = $attribute->attribute('data_type_string');
-                if (isset($handlers[$typeString])) {
-                    $handlerClass = $handlers[$typeString];
-                    $handler = new $handlerClass(array(
-                        'attribute' => $attribute,
-                    ));
-                    $this->defineFilter($filterIdentifier, $handler);
-                } elseif ($typeString == 'ezinteger' || $typeString == 'ezselection') {
-                    $this->defineFilter($filterIdentifier, 'int', $filterIdentifier);
-                } elseif ($typeString == 'ezboolean') {
-                    $this->defineFilter($filterIdentifier, 'bool', $filterIdentifier);
-                } else{
-                    $this->defineFilter($filterIdentifier, 'string', $filterIdentifier);
-                }
-            }
-        }
-    }
-
-    /**
-    * Adds/replaces a filter definition.
-    * If $type is a string it can contain one of these types:
-    * - 'int' - Integer field
-    * - 'bool' - Boolean field
-    * - 'string' - String field
-    * The implementation will then pick an appropriate filter class.
-    *
-    * @param $name Name of the filter to be used when setting the filter value later on.
-    * @param $type The type of filter, either a string or an instance of FieldFilterBase.
-    * @param $attributeIdentifier The identifier of the class attribute to filter on, or null to use $name.
-    */
-    protected function addDefinedFilter($name, $type, $attributeIdentifier=null)
-    {
-        if (is_array($type)) {
-            if (isset($type['type'])) {
-                $attributeIdentifier = Arr::get($type, 'attribute');
-                $type = Arr::get($type, 'type');
-            } else{
-                if (isset($type[1])) {
-                    $attributeIdentifier = $type[1];
-                }
-                $type = $type[0];
-            }
-        }
-        if (!$attributeIdentifier) {
-            $attributeIdentifier = $name;
-        }
-        if (!is_object($type)) {
-            $operator = '=';
-            $pre = array();
-            $post = array();
-            if (preg_match("|^([^:]+)((:([^:]+))+)?$|", $attributeIdentifier, $matches)) {
-                if (isset($matches[2])) {
-                    $ops = explode(":", substr($matches[2], 1));
-                    $attributeIdentifier = $matches[1];
-                    $inPre = true;
-                    foreach ($ops as $modifier) {
-                        if (in_array($modifier, \Aplia\Content\Filter\NestedFilter::$ops)) {
-                            $operator = $modifier;
-                            $inPre = false;
-                        } else if ($inPre) {
-                            $pre[] = $modifier;
-                        } else {
-                            $post[] = $modifier;
-                        }
-                    }
-                    if (!strlen($operator)) {
-                        $operator = '=';
-                    }
-                }
-            }
-            $filterParams = array(
-                'contentAttribute' => $attributeIdentifier,
-                'operator' => $operator
-            );
-            if ($pre) {
-                $filterParams['fieldModifiers'] = $pre;
-            }
-            if ($post) {
-                $filterParams['valueModifiers'] = $post;
-            }
-            if ($type == 'int') {
-                $filter = new IntegerFieldFilter($filterParams);
-            } elseif ($type == 'bool') {
-                $filter = new BoolFieldFilter($filterParams);
-            } elseif ($type == 'string') {
-                $filter = new StringFieldFilter($filterParams);
-            } else {
-                throw new FilterTypeError("Unsupported filter type: $type");
-            }
-        } else {
-            $filter = $type;
-        }
-        $this->filterTypes[$name] = $filter;
     }
 
     /**
@@ -1173,38 +840,13 @@ class QuerySet implements \IteratorAggregate
         return $defaultPageLimit;
     }
 
-    /**
-    * Returns a potential clone of the current query-set.
-    * If $useClone is true then the query-set is cloned, otherwise
-    * it returns the same instance.
-    *
-    * @param $markDirty If true then it will reset the current result instance.
-    * @return Aplia\Content\Query\QuerySet
-    */
-    protected function makeClone($markDirty)
-    {
-        if ($this->useClone) {
-            $clone = clone $this;
-        } else {
-            $clone = $this;
-        }
-        if ($markDirty) {
-            $clone->_isDirty = true;
-        }
-        return $clone;
-    }
-
     public function __clone() {
+        parent::__clone();
         if ($this->sortOrder !== null) {
             $this->sortOrder = clone $sortOrder;
         }
         if ($this->_result !== null) {
             $this->_result = clone $result;
-        }
-        foreach ($this->filterTypes as $key => $filter) {
-            if (is_object($filter)) {
-                $this->filterTypes[$key] = clone $filter;
-            }
         }
     }
 
@@ -1217,7 +859,10 @@ class QuerySet implements \IteratorAggregate
     // eZ template access
     public function hasAttribute($key)
     {
-        return isset($this->$key) || in_array($key, array('result', 'count', 'items', 'iterator'));
+        if (isset($this->$key) || in_array($key, array('result', 'count', 'items', 'iterator'))) {
+            return true;
+        }
+        return parent::hasAttribute($key);
     }
 
     public function attribute($key)
@@ -1225,11 +870,14 @@ class QuerySet implements \IteratorAggregate
         if (in_array($key, array('result', 'count', 'items', 'iterator'))) {
             return $this->$key();
         }
+        if (parent::hasAttribute($key)) {
+            return parent::attribute($key);
+        }
         return $this->$key;
     }
 
     public function attributes()
     {
-        return array_merge(array_keys( get_object_vars($this) ), array('result', 'count', 'items', 'iterator'));
+        return array_unique(array_merge(array_keys( get_object_vars($this) ), array('result', 'count', 'items', 'iterator'), parent::attributes()));
     }
 }
