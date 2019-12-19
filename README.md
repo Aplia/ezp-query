@@ -31,7 +31,7 @@ used to filter the set and return a new queryset instance.
 The query-set acts as an iterator and can be passed to foreach statements
 directly.
 
-```
+```php
 <?php
 $set = new QuerySet();
 foreach ($set as $node) {
@@ -49,7 +49,7 @@ Most methods are designed to return a query-set instance upon completion
 to allow for chaining multiple methods.
 
 For instance:
-```
+```php
 <?php
 $set = new QuerySet();
 $newSet = $set->depth(1)->sortByField('a-z');
@@ -60,7 +60,7 @@ The query-set can also be instructed to create new clones for each
 change that is made to it, this means that the chaining methods
 will create new copies and that the original instance is kept as-is.
 
-```
+```php
 <?php
 $set = new QuerySet(array('useClone' => true));
 $newSet = $set->depth(1)->sortByField('a-z');
@@ -68,7 +68,7 @@ $newSet = $set->depth(1)->sortByField('a-z');
 ```
 
 To explicitly create a new clone call `copy()`:
-```
+```php
 <?php
 $set = new QuerySet();
 $newSet = $set->copy()->depth(1)->sortByField('a-z');
@@ -80,7 +80,7 @@ $newSet = $set->copy()->depth(1)->sortByField('a-z');
 
 Example, list all children of the root node:
 
-```
+```php
 <?php
 $set = new QuerySet();
 foreach ($set as $node) {
@@ -92,7 +92,7 @@ foreach ($set as $node) {
 
 List only articles of the root node:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->classes('article');
@@ -110,7 +110,7 @@ foreach ($set as $node) {
 
 List entire tree of a given node (node id 42):
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->depth(false)->parentNode(42);
@@ -128,7 +128,7 @@ foreach ($set as $node) {
 
 List a specific depth using an operator:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->depth(2, '>=');
@@ -146,7 +146,7 @@ foreach ($set as $node) {
 
 Change sort order to alphabetical:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->sortByField('a-z');
@@ -157,7 +157,7 @@ foreach ($set as $node) {
 
 Creating a new sort field and sorting on that:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->sortChoices(array('age' => 'created'))->sortByField('-age');
@@ -168,7 +168,7 @@ foreach ($set as $node) {
 
 Use a regular sort array:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->sortByArray(array(
@@ -183,7 +183,7 @@ foreach ($set as $node) {
 
 Use pagination and fetch specific page:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set->pageLimit(50)->page(5);
@@ -196,7 +196,7 @@ foreach ($set as $node) {
 
 Filter by fields:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -219,7 +219,7 @@ on modifiers.
 
 Example which finds all articles that starts with `M`
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -235,7 +235,7 @@ foreach ($set as $node) {
 
 Load filters from the content class:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -262,7 +262,7 @@ will AND the filters together.
 
 Custom filters can be used together with normal filters.
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -279,7 +279,7 @@ foreach ($set as $node) {
 
 To explicitly get the result object (e.g. for templates) use `result()`.
 
-```
+```php
 <?php
 $set = new QuerySet();
 $result = $set->result();
@@ -294,7 +294,7 @@ for instance showing the total count, used filters and listing items.
 The query-set acts as an iterator but if you need the item list
 directly call `items()`:
 
-```
+```php
 <?php
 $set = new QuerySet();
 foreach ($set->items() as $node) {
@@ -306,7 +306,7 @@ foreach ($set->items() as $node) {
 
 Turn off default visibilty rules:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -324,7 +324,7 @@ foreach ($set as $node) {
 
 Only list hidden items (this turns off default rules):
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -338,7 +338,7 @@ foreach ($set as $node) {
 
 Limit result to only main nodes:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -357,7 +357,7 @@ foreach ($set as $node) {
 
 Turn off all role-based policies:
 
-```
+```php
 <?php
 $set = new QuerySet();
 $set = $set
@@ -374,7 +374,7 @@ foreach ($set as $node) {
 
 Filter based on a custom policy array:
 
-```
+```php
 <?php
 $policies = array(/*...*/);
 $set = new QuerySet();
