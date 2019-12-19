@@ -1,6 +1,6 @@
 # Aplia Content Query
 
-A set of classes to help with running queries against Content Objects/Nodes.
+Simplified API for doing content queries in eZ publish legacy.
 
 
 [![Latest Stable Version](https://img.shields.io/packagist/v/aplia/query.svg?style=flat-square)](https://packagist.org/packages/aplia/query)
