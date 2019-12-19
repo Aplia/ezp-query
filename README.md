@@ -2,6 +2,10 @@
 
 A set of classes to help with running queries against Content Objects/Nodes.
 
+
+[![Latest Stable Version](https://img.shields.io/packagist/v/aplia/query.svg?style=flat-square)](https://packagist.org/packages/aplia/query)
+[![Minimum PHP Version](https://img.shields.io/badge/php-%3E%3D%205.3-8892BF.svg?style=flat-square)](https://php.net/)
+
 ## Installation
 Install with Composer:
 
