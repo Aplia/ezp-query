@@ -1,12 +1,12 @@
 {
     "name": "aplia/query",
-    "description": "API for doing content queries in eZ publish",
-    "homepage": "https://bitbucket.org/aplia/library-apliaquery",
+    "description": "Simplified API for doing content queries in eZ publish legacy",
+    "homepage": "https://github.com/Aplia/ezp-query",
     "license": "MIT",
     "authors": [
         {
             "name": "Aplia dev-team",
-            "homepage": "https://bitbucket.org/aplia"
+            "homepage": "https://github.com/Aplia"
         }
     ],
     "replace": {
