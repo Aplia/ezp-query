@@ -1,6 +1,16 @@
 # Aplia Content Query
 
 A set of classes to help with running queries against Content Objects/Nodes.
+
+## Installation
+Install with Composer:
+
+```
+composer require aplia/query
+```
+
+## Overview
+
 It is divided in three main areas.
 
 - pagination
@@ -403,3 +413,8 @@ sort columns for an API and also which sort column and order has been chosen.
 After running the query a result object is returned, it is of type `Result`
 and contains all the results of the query, including items, total count,
 page object, sort order and filters.
+
+
+## License
+
+The helper library is open-sourced software licensed under the MIT license.
